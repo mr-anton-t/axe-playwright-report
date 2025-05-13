@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Env files
+.env*
+!.env.example
+
+# IDEs
+.idea/
+.vscode/
+
+# OS/System
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+*.log
+
+# Reports/output (optional)
+axe-playwright-report/
+coverage/

@@ -4,12 +4,12 @@ import {randomUUID} from 'crypto';
 import fs from 'fs';
 
 /**
- * A decorator that runs an accessibility scan using Axe before executing the decorated method.
+ * A decorator that runs an accessibility scan using Axe after executing the decorated method.
  *
  * **Usage Instructions**:
  * 1. This decorator should be assigned to methods within a **Page Object** class.
  * 2. The Page Object class should contain a parameter of type `Page` (otherwise, the accessibility scan will not be executed).
- * 3. The accessibility scan is performed before the body of the method is executed. The method will only be executed if the accessibility scan passes.
+ * 3. The accessibility scan is performed after the body of the method is executed. The method will only be executed if the accessibility scan passes.
  *
  * The scan checks for common accessibility issues using the Axe-core library.
  *
@@ -17,16 +17,15 @@ import fs from 'fs';
  * @template Args - The type of arguments the decorated method takes.
  * @template Return - The return type of the decorated method.
  *
- * @param target - The method to be decorated. This method will be wrapped so that the Axe accessibility scan runs before it.
+ * @param target - The method to be decorated. This method will be wrapped so that the Axe accessibility scan runs after it.
  *
- * @returns A new function that runs the accessibility scan before executing the original method.
+ * @returns A new function that runs the accessibility scan after executing the original method.
  * It returns a `Promise` that resolves to the return value of the original method.
  *
  * @example
  * // Usage example:
  * class MyPage {
- *   constructor(protected page: Page) {}
- *
+ *   page: Page;
  *   @axeScan
  *   async someMethod() {
  *     this.page.getByText('Hello World').click();
@@ -36,7 +35,7 @@ import fs from 'fs';
 export function axeScan<This, Args extends any[], Return>() {
     return function actualDecorator(target: (this: This, ...args: Args) => Promise<Return>) {
         async function scan(this: any, ...args: Args) {
-            //const result = await target.apply(this, args);
+            const result = await target.apply(this, args);
             const accessibilityConfig = loadEnvConfig()
 
             if (accessibilityConfig.scan) {
@@ -78,7 +77,7 @@ export function axeScan<This, Args extends any[], Return>() {
                     }
                 }
             }
-            return await target.apply(this, args); // to scan first
+            return result
         }
 
         return scan;
@@ -96,11 +95,9 @@ async function highlightEachIssuesAndSaveScreenshot(issues: any[], page: Page, c
         for (let j = 0; j < issues[i].nodes.length; j++) {
             for (let k = 0; k < issues[i].nodes[j].target.length; k++) {
                 try {
-                    console.log("Highlighting element: ", issues[i].nodes[j].target[k] + " timestamp: " + new Date().getTime());
                     const element = (await page.locator(<string>issues[i].nodes[j].target[k]).all())[0]
                     await highlightElement(element, j, color);
-                } catch (e: any) {
-                    console.log("Error highlighting element: ", issues[i].nodes[j].target[k] + " timestamp: " + new Date().getTime());
+                } catch (ignore: any) {
                 }
             }
         }
@@ -111,7 +108,6 @@ async function highlightEachIssuesAndSaveScreenshot(issues: any[], page: Page, c
         for (let j = 0; j < issues[i].nodes.length; j++) {
             for (let k = 0; k < issues[i].nodes[j].target.length; k++) {
                 try {
-                    console.log("Deleting highlighted element: ", issues[i].nodes[j].target[k] + " timestamp: " + new Date().getTime());
                     const element = (await page.locator(<string>issues[i].nodes[j].target[k]).all())[0]
                     await element.evaluate((el) => {
                         el.style.outline = "none";
@@ -121,8 +117,7 @@ async function highlightEachIssuesAndSaveScreenshot(issues: any[], page: Page, c
                             marker.remove();
                         }
                     }, {timeout: 250});
-                } catch (e: any) {
-                    console.log("Error deleting highlighted element: ", issues[i].nodes[j].target[k] + " timestamp: " + new Date().getTime());
+                } catch (ignore: any) {
                 }
             }
         }
@@ -132,7 +127,7 @@ async function highlightEachIssuesAndSaveScreenshot(issues: any[], page: Page, c
 function loadEnvConfig(envPath: string = ".env.a11y") {
     const defaultConfig = {
         scan: true,
-        outputDir: "sunrise-axe-dashboard/pages",
+        outputDir: "axe-playwright-report/pages",
         screenshots: false,
         tags: [] as string[],
     };
@@ -189,8 +184,7 @@ async function highlightElement(element: Locator, index: number, color: string) 
 
             el.appendChild(marker);
         }, {index, color}, {timeout: 250});
-    } catch (e: any) {
-        console.log("Error direct highlighting element: ", element + " timestamp: " + new Date().getTime());
+    } catch (ignore: any) {
     }
 }
 

@@ -1,15 +1,16 @@
 {
-  "name": "@sunrise/axe-playwright-report",
-  "version": "1.0.0",
+  "name": "axe-playwright-report",
+  "version": "1.0.0-beta.1",
   "description": "Playwright + axe-core integration to run accessibility scans and build HTML dashboard reports.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "sunaxe": "buildReport.js"
+    "build-report": "buildReport.js"
   },
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "echo \"No tests yet\" && exit 0"
   },
   "files": [
     "dist",
@@ -17,7 +18,6 @@
     "LICENSE"
   ],
   "keywords": [
-    "sunrise",
     "accessibility",
     "axe-core",
     "playwright",
@@ -25,11 +25,11 @@
     "dashboard",
     "a11y"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Yevhenii Otsevych",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/axe-playwright-report"
+    "url": "git+https://github.com/eotsevych/axe-playwright-report.git"
   },
   "peerDependencies": {
     "@axe-core/playwright": "^4.10.1",

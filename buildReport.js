@@ -4,11 +4,11 @@ const path = require("path");
 const URL = require('url').URL;
 require('dotenv').config({ path: path.join(process.cwd(), '.env.a11y') });
 
-const BASE_DIR = process.env.OUTPUT_DIR || './sunrise-axe-dashboard'
+const BASE_DIR = process.env.OUTPUT_DIR || './axe-playwright-report'
 const PAGES_DIR = '/pages';
 
-const allFiles = fs.readdirSync(BASE_DIR + PAGES_DIR);
-const jsonFiles = allFiles.filter(file => file.endsWith('.json'));
+let allFiles = [];
+let jsonFiles = [];
 
 function getAxeVersion(version) {
     const parts = version.split('.');
@@ -632,8 +632,6 @@ function generateReport() {
 
         const id = report.id || normalizePath(report.url)
         fs.writeFileSync(path.join(BASE_DIR, PAGES_DIR, id + ".html"), baseContent, 'utf8');
-
-        console.log(`✅ Report generated: ${report.id}  + ".html"`);
     });
 }
 
@@ -655,7 +653,7 @@ function generateDashboard() {
 
     fs.writeFileSync(outputPath, template, 'utf8');
 
-    console.log(`✅ Report generated: ${outputPath}`);
+    console.log(`Report successfully generated to ${ path.join(process.cwd(), BASE_DIR)}`);
 }
 
 function deduplicate() {
@@ -714,11 +712,9 @@ function deduplicate() {
             const filePath = path.join(BASE_DIR + PAGES_DIR, file);
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
-                console.log(`🗑️ Deleted: ${filePath}`);
             }
         });
     }
-    console.log(`✅ Done! Kept ${bestReports.size} oldest reports, deleted ${toDelete.length} newer duplicates.`);
 }
 
 function normalizePath(url) {
@@ -741,16 +737,24 @@ function normalizePath(url) {
 
 
 function main() {
+    try {
+        allFiles = fs.readdirSync(BASE_DIR + PAGES_DIR);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log(`Directory ${path.join(process.cwd(),BASE_DIR,PAGES_DIR)} not found`);
+            return
+        } else {
+            throw err
+        }
+    }
+
+    console.log("Generating Accessibility Report...");
+    jsonFiles = allFiles.filter(file => file.endsWith('.json'));
+
     deduplicate();
     generateReport();
     generateDashboard();
 
-    const logoSrc = path.join(__dirname, './logo.png');
-    const logoDest = path.join(process.cwd(), BASE_DIR, 'logo.png');
-    if (fs.existsSync(logoSrc)) {
-        fs.copyFileSync(logoSrc, logoDest);
-        console.log(`✅ Copied logo.png to ${logoDest}`);
-    }
     fs.copyFileSync(path.join(__dirname, './styles.css'), path.join(process.cwd(), BASE_DIR, './styles.css'));
 
 }

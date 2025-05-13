@@ -11,11 +11,12 @@
 </head>
 
 <body>
-<header>
-    <img id="logo" src='./logo.png' alt="Accessibility Test Report Tool Logo" class="ml-4 w-28">
+<header class="p-4">
+    <h1 class="text-2xl font-bold text-gray-800">Accessibility Report Dashboard</h1>
+    <p class="text-sm text-gray-500">Powered by axe-core and Playwright</p>
 </header>
 <nav>
-    <div id="breadcrumb-container">
+    <div id="breadcrumb-container" style="display:none;">
         <ul class="breadcrumb">
             <li><a href="#" onclick="showDashboard()">Dashboard</a></li>
             <li id="report-breadcrumb" style="display:none;">Report Details</li>
@@ -439,8 +440,8 @@
         document.getElementById('dashboard').classList.remove('hidden');
         document.getElementById('dashboard').style.display = 'block';
 
-        // Update breadcrumb visibility
-        document.getElementById('report-breadcrumb').style.display = 'none';
+        // Hide breadcrumb container
+        document.getElementById('breadcrumb-container').style.display = 'none';
     }
 
     function showReport(filePath) {
@@ -461,6 +462,7 @@
                 document.getElementById('report-page').classList.remove('hidden');
 
                 // Update breadcrumb visibility
+                document.getElementById('breadcrumb-container').style.display = 'block';
                 document.getElementById('report-breadcrumb').style.display = 'block';
                 document.getElementById('report-breadcrumb').textContent = `${filePath}`;
 
