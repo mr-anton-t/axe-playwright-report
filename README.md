@@ -4,6 +4,8 @@
 
 Open-source library for generating accessibility dashboard reports with Playwright and axe-core.
 
+![Example Dashboard Report](./assets/dashboard_example.png)
+
 ## Main Aim
 
 The primary goal of this library is to enhance standard UI automation tests and the Page Object Pattern by enabling integrated accessibility scans. Instead of maintaining separate accessibility tests—which often duplicate the structure of regular UI tests—this library lets you trigger accessibility checks directly within your existing test flows. This approach reduces maintenance overhead when test flows change, as accessibility scans can be performed at any point in your current tests without the need for dedicated accessibility test cases.
@@ -102,6 +104,13 @@ This will generate an interactive HTML dashboard in your output directory.
 - **Dashboard**: `index.html` and supporting files in your output directory.
 - **Per-page results**: JSON files for each scanned page.
 - **Screenshots**: PNGs highlighting issues (if enabled).
+
+### Example Report
+
+Below is an example of the generated dashboard report:
+
+![Example Report Page](./assets/report_example_1.png)
+![Example Report Page Expanded](./assets/report_example_2.png)
 
 ## License
 
