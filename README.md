@@ -1,6 +1,6 @@
 # axe-playwright-report
 
-[![npm version](https://badge.fury.io/js/axe-playwright-report.svg)](https://www.npmjs.com/package/axe-playwright-report)
+[![npm version](https://img.shields.io/npm/v/axe-playwright-report.svg)](https://www.npmjs.com/package/axe-playwright-report)
 
 Open-source library for generating accessibility dashboard reports with Playwright and axe-core.
 
