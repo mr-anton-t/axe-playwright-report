@@ -23,9 +23,6 @@ import fs from 'fs';
  * It returns a `Promise` that resolves to the return value of the original method.
  *
  * @example
- * // Usage example:
- * class MyPage {
- *   page: Page;
  *   @axeScan
  *   async someMethod() {
  *     this.page.getByText('Hello World').click();
@@ -34,7 +31,7 @@ import fs from 'fs';
  */
 export function axeScan<This, Args extends any[], Return>() {
     return function actualDecorator(target: (this: This, ...args: Args) => Promise<Return>) {
-        async function scan(this: any, ...args: Args) {
+        async function scan(this: any, ...args: Args): Promise<Return> {
             const result = await target.apply(this, args);
             const accessibilityConfig = loadEnvConfig()
 
@@ -43,7 +40,7 @@ export function axeScan<This, Args extends any[], Return>() {
 
                 if (!page) {
                     console.warn(`Page not found in context in args [${Object.values(this)}].\n(Make sure you are using the decorator on a method that has access to the Playwright Page);\nSkipping axe scan.\n`);
-                    return;
+                    return result;
                 }
 
                 const accessibilityScanResults = accessibilityConfig.tags.length > 0 ?
@@ -80,7 +77,7 @@ export function axeScan<This, Args extends any[], Return>() {
             return result
         }
 
-        return scan;
+        return scan as (this: This, ...args: Args) => Promise<Return>;
     }
 }
 
