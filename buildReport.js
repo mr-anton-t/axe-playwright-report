@@ -2,10 +2,11 @@
 const fs = require('fs');
 const path = require("path");
 const URL = require('url').URL;
-require('dotenv').config({ path: path.join(process.cwd(), '.env.a11y') });
+require('dotenv').config({path: path.join(process.cwd(), '.env.a11y')});
 
 const BASE_DIR = process.env.OUTPUT_DIR || './axe-playwright-report'
 const PAGES_DIR = '/pages';
+const MERGE_STRATEGY = process.env.MERGE_STRATEGY || 'best';
 
 let allFiles = [];
 let jsonFiles = [];
@@ -545,7 +546,7 @@ function generateTableCards(reports) {
         const incomplete = report.incomplete ? report.incomplete.length : 0;
         const passes = report.passes ? report.passes.length : 0;
         const inapplicable = report.inapplicable ? report.inapplicable.length : 0;
-        const lastTested = report.timestamp || 'N/A';
+        const lastTested = report.timestamp ? formatDate(report.timestamp) : 'N/A';
 
         tableRows += `
             <tr>
@@ -572,7 +573,7 @@ function generateTableCards(reports) {
                   <th>Inapplicable 
                   <span class="inapplicable-tooltip-wrapper">
                     <span style="border-bottom:1px dotted #000; cursor:pointer;">&#9432;</span>
-                    <span class="tooltip-text">There was nothing on the page that this rule would even apply to.</span>
+                    <span class="tooltip-text">Rules that didn’t apply because the page had no relevant elements to test</span>
                   </span>
                 </th>
                  <th>Last Tested</th>
@@ -722,6 +723,8 @@ function generateReport() {
         baseContent = baseContent.replace("{{TABS}}", tabs);
         baseContent = baseContent.replace("{{FILTERS}}", '');
         baseContent = baseContent.replace("{{ISSUE_CARDS}}", combineIssueCards([violationsIssueCards, incompleteIssueCards, passedIssueCards]));
+        baseContent = baseContent.replace("./main.js", "../main.js");
+        baseContent = baseContent.replace("./styles.css", "../styles.css");
 
         const id = report.id || normalizePath(report.url)
         fs.writeFileSync(path.join(BASE_DIR, PAGES_DIR, id + ".html"), baseContent, 'utf8');
@@ -748,11 +751,10 @@ function generateDashboard() {
 
     fs.writeFileSync(outputPath, dashboardBody, 'utf8');
 
-    console.log(`Report successfully generated to ${ path.join(process.cwd(), BASE_DIR)}`);
+    console.log(`Report successfully generated to ${path.join(process.cwd(), BASE_DIR)}`);
 }
 
-function deduplicate() {
-
+function deduplicate(strategy) {
     const reports = jsonFiles.map(file => {
         const filePath = path.join(BASE_DIR + PAGES_DIR, file);
         const raw = fs.readFileSync(filePath, 'utf-8');
@@ -770,46 +772,96 @@ function deduplicate() {
         };
     });
 
+    console.log("[!] Reports merging strategy: ", strategy.toUpperCase());
 
-    const bestReports = new Map();
-    const toDelete = [];
-
-    for (const report of reports) {
-        const url = report.data.path;
-        const existing = bestReports.get(url);
-
-        if (!report.data.newUrl) {
-            console.log(`${report.data.id}⚠️ Skipping report for URL: ${url}`);
-            continue;
-        }
-
-        if (
-            !existing ||
-            report.data.violations.length > existing.data.violations.length ||
-            (report.data.violations.length === existing.data.violations.length &&
-                report.data.incomplete.length > existing.data.incomplete.length) ||
-            (report.data.violations.length === existing.data.violations.length &&
-                report.data.incomplete.length === existing.data.incomplete.length &&
-                report.timestamp > existing.timestamp)
-        ) {
-            if (existing) toDelete.push(existing.uuid); // delete the less preferred one
-            bestReports.set(url, report); // keep the preferred one
-        } else {
-            toDelete.push(report.uuid); // delete the less preferred one
-        }
+    if (strategy === 'none') {
+        return;
     }
 
-    for (const uuid of toDelete) {
-        const filesToDelete = fs.readdirSync(BASE_DIR + PAGES_DIR).filter(file =>
-            file.startsWith(uuid)
-        );
-        filesToDelete.forEach(file => {
-            const filePath = path.join(BASE_DIR + PAGES_DIR, file);
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+    if (strategy === 'exact') {
+        const seen = new Map();
+        const toDelete = [];
+        for (const report of reports) {
+            // Only compare url, incomplete, violations
+            const dataCopy = {
+                url: report.data.url,
+                incomplete: report.data.incomplete?.flatMap(i => i.nodes?.flatMap(n => n.target) || []) || [],
+                violations: report.data.violations?.flatMap(i => i.nodes?.flatMap(n => n.target) || []) || []
+            };
+
+            const key = JSON.stringify(dataCopy);
+            if (seen.has(key)) {
+                toDelete.push(report.uuid);
+            } else {
+                seen.set(key, report);
             }
-        });
+        }
+        for (const uuid of toDelete) {
+            const filesToDelete = fs.readdirSync(BASE_DIR + PAGES_DIR).filter(file =>
+                file.startsWith(uuid)
+            );
+            filesToDelete.forEach(file => {
+                const filePath = path.join(BASE_DIR + PAGES_DIR, file);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            });
+        }
+        return;
     }
+
+    if (strategy === 'best') {
+        const bestReports = new Map();
+        const toDelete = [];
+
+        for (const report of reports) {
+            const url = report.data.path;
+            const existing = bestReports.get(url);
+
+            if (!report.data.newUrl) {
+                continue;
+            }
+
+            if (
+                !existing ||
+                report.data.violations.length > existing.data.violations.length ||
+                (report.data.violations.length === existing.data.violations.length &&
+                    report.data.incomplete.length > existing.data.incomplete.length) ||
+                (report.data.violations.length === existing.data.violations.length &&
+                    report.data.incomplete.length === existing.data.incomplete.length &&
+                    report.timestamp > existing.timestamp)
+            ) {
+                if (existing) toDelete.push(existing.uuid);
+                bestReports.set(url, report);
+            } else {
+                toDelete.push(report.uuid);
+            }
+        }
+
+        for (const uuid of toDelete) {
+            const filesToDelete = fs.readdirSync(BASE_DIR + PAGES_DIR).filter(file =>
+                file.startsWith(uuid)
+            );
+            filesToDelete.forEach(file => {
+                const filePath = path.join(BASE_DIR + PAGES_DIR, file);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            });
+        }
+    }
+}
+
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const mins = String(date.getMinutes()).padStart(2, '0');
+    return `${day}-${month}-${year} ${hours}:${mins}`;
 }
 
 function normalizePath(url) {
@@ -836,7 +888,7 @@ function main() {
         allFiles = fs.readdirSync(BASE_DIR + PAGES_DIR);
     } catch (err) {
         if (err.code === 'ENOENT') {
-            console.log(`Directory ${path.join(process.cwd(),BASE_DIR,PAGES_DIR)} not found`);
+            console.log(`Directory ${path.join(process.cwd(), BASE_DIR, PAGES_DIR)} not found`);
             return
         } else {
             throw err
@@ -846,7 +898,7 @@ function main() {
     console.log("Generating Accessibility Report...");
     jsonFiles = allFiles.filter(file => file.endsWith('.json'));
 
-    deduplicate();
+    deduplicate(MERGE_STRATEGY);
     generateReport();
     generateDashboard();
 

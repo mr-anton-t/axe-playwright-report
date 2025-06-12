@@ -1,6 +1,6 @@
 {
   "name": "axe-playwright-report",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Playwright + axe-core integration to run accessibility scans and build HTML dashboard reports.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,8 +35,8 @@
     "url": "git+https://github.com/eotsevych/axe-playwright-report.git"
   },
   "peerDependencies": {
-    "@axe-core/playwright": "^4.10.1",
-    "@playwright/test": "^1.52.0"
+    "@playwright/test": ">=1.44.0",
+    "@axe-core/playwright": ">=4.10.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",

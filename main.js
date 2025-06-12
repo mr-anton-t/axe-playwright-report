@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const rowsPerPage = 5;
+    const rowsPerPage = 10;
     let currentPageTable = 1;
 
     function paginateTable() {

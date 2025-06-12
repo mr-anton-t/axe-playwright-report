@@ -10,9 +10,9 @@ Open-source library for generating accessibility dashboard reports with Playwrig
 
 The primary goal of this library is to enhance standard UI automation tests and the Page Object Pattern by enabling integrated accessibility scans. Instead of maintaining separate accessibility tests—which often duplicate the structure of regular UI tests—this library lets you trigger accessibility checks directly within your existing test flows. This approach reduces maintenance overhead when test flows change, as accessibility scans can be performed at any point in your current tests without the need for dedicated accessibility test cases.
 
-#### ℹ️ Reasonable Remark: 
-> q: Page object methods are reused in multiple tests, which will create multiple reports for the same page. 
-> 
+#### ℹ️ Reasonable Remark:
+> q: Page object methods are reused in multiple tests, which will create multiple reports for the same page.
+>
 > a: During dashboard generation, the library will automatically de-duplicate results and retain only the scan with the most accessibility issues for each page.
 
 ## Features
@@ -38,16 +38,20 @@ npm install axe-playwright-report --save-dev
 ### 1. Decorate your Playwright test methods
 
 ```typescript
-import { axe } from 'axe-playwright-report';
+import { axeScan } from 'axe-playwright-report';
 
 class MyTest {
-  page: Page;
+    page: Page;
 
-  @axeScan()
-  async testHomePage() {
-    await this.page.goto('https://example.com');
-    // ... your test logic ...
-  }
+    constructor(page: Page) {
+        this.page = page;
+    }
+
+    @axeScan()
+    async testHomePage() {
+        await this.page.goto('https://example.com');
+        // ... your test logic ...
+    }
 }
 ```
 
@@ -57,25 +61,30 @@ class MyTest {
 
 > ### ⚠️ **Limitations**
 > The Page Object Class must contain an object of type `Page`. If you decompose the page and use `Locator` as a base for searching elements, the accessibility scan will be skipped.
-> 
+>
 > **Applicable ✅**: `new sideMenu(page)`
-> 
+>
 > **Not-applicable ❌**: `new sideMenu(page.locator('#sideMenu'))`
 
 ### 2. Configure scan options (optional)
 
-Having accessibility env file gives you the flexibility to customize your scan settings. 
+Having accessibility env file gives you the flexibility to customize your scan settings.
 With config file it allows:
 - enable/disable scanning (default: `on`)
 - custom output directory (default: `axe-playwright-report`)
 - enable/disable screenshots capture (default: `off`)
 - filter rules by axe-core tags (default: `no filtering, all rules included`)
+- merge reports strategy (default: `best`)
+    - `none` - keep all reports,
+    - `exact` - merge only identical reports,
+    - `best` - keeps the report with the most accessibility issues
 
 Create a `.env.a11y` file in your project root:
 
 ```
 SCAN=on
 OUTPUT_DIR=custom-report-dir
+MERGE_REPORTS=best
 SCREENSHOT=on
 TAGS=wcag2a,wcag2aa
 ```
@@ -96,8 +105,8 @@ npx axe-playwright-report build-report
 This will generate an interactive HTML dashboard in your output directory.
 
 > #### Backward Compatibility with Axe-core/playwright
-> if you have existing reports generated with axe-core/playwright, you can still use this library to build the dashboard. 
-> Just place your existing JSON report files in the `axe-playwright-report/pages` directory after running the `build-report` command.
+> if you have existing reports generated with axe-core/playwright, you can still use this library to build the dashboard.
+> Just place your existing JSON report files in the `axe-playwright-report/pages` directory and run the `build-report` command.
 
 ## Output
 
