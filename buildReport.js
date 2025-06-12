@@ -28,10 +28,59 @@ function readJSONFile(path) {
     return JSON.parse(fs.readFileSync(path, 'utf8'));
 }
 
-function generateBaseContent(report) {
+function generateBaseDashboard(template) {
+    return template.replace("{{CONTENT}}",
+        `
+         <body><header class="p-4">
+        <h1 class="text-2xl font-bold text-gray-800">Accessibility Report Dashboard</h1>
+        <p class="text-sm text-gray-500">Powered by axe-core and Playwright</p>
+    </header>
+    <nav>
+        <div id="breadcrumb-container" style="display:none;">
+              <!--<ul class="breadcrumb">
+                <li><a href="#" onclick="showDashboard()">Dashboard</a></li>
+                <li id="report-breadcrumb" style="display:none;">Report Details</li>
+            </ul>-->
+        </div>
+    </nav>
+
+    <main>
+        <h1 class="visually-hidden">Dashboard Overview</h1>
+        <div class="container">
+            <!-- Dashboard View -->
+            <div class="dashboard active" id="dashboard">
+                {{summary_cards}}
+                <div class="chart-container grid grid-cols-2 gap-4">
+                    {{impact_distribution_chart}}
+                    {{disabilities_affected_chart}}
+                </div>
+                {{table_cards}}
+            </div>
+        </div>
+    </main><body>
+    `);
+}
+
+function generateBaseContent(template, report) {
     const {userAgent, windowWidth, windowHeight} = report.testEnvironment || {};
 
-    return `
+    return template.replace("{{CONTENT}}",
+        `<body>
+     <header class="p-4">
+        <h1 class="text-2xl font-bold text-gray-800">Accessibility Report Dashboard</h1>
+        <p class="text-sm text-gray-500">Powered by axe-core and Playwright</p>
+    </header>
+    <nav>
+        <div id="breadcrumb-container">
+            <ul class="breadcrumb">
+                <li><a href="../index.html" title="Dashboard">Dashboard</a></li>
+                <li id="report-breadcrumb">${report.id}</li>
+            </ul>
+        </div>
+    </nav>
+    
+   
+ <main>
       <body class="bg-white text-gray-900">
             <div class="container mx-auto p-4 max-w-6xl">
                 <!-- Header and Breadcrumb -->
@@ -55,7 +104,50 @@ function generateBaseContent(report) {
                 {{ISSUE_CARDS}}
             </div>
         </body>
-        `
+    </main></body>
+        `) + `
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const violationsTab = document.querySelector('[data-tab="violations"]');
+            if (violationsTab) violationsTab.click();
+    
+            const impactFilter = document.getElementById("impact-filter");
+            const tagFilter = document.getElementById("tag-filter");
+            const disabilityFilter = document.getElementById("disability-filter");
+    
+            if (impactFilter) impactFilter.addEventListener("change", () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+            if (tagFilter) tagFilter.addEventListener("change", () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+            if (disabilityFilter) disabilityFilter.addEventListener("change", () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+    
+            applyFilters(impactFilter, tagFilter, disabilityFilter);
+            
+        });
+        
+        document.querySelectorAll('.toggle-details').forEach(button => {
+            button.addEventListener('click', () => {
+                const details = button.nextElementSibling;
+                details.classList.toggle('expanded');
+                button.classList.toggle('expanded');
+         });
+            })
+            
+         document.querySelectorAll('.toggle-details').forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.stopPropagation(); // Prevent event bubbling to parent elements
+                const nodeDetails = this.nextElementSibling;
+                nodeDetails.classList.toggle('hidden');
+
+                // Update button text based on state
+                if (nodeDetails.classList.contains('hidden')) {
+                    this.innerHTML = '<i class="fas fa-chevron-down"></i> Show failure details';
+                } else {
+                    this.innerHTML = '<i class="fas fa-chevron-up"></i> Hide failure details';
+                }
+            });
+        });
+        
+
+    </script>`
 }
 
 function generateFilters(report, affected) {
@@ -305,7 +397,7 @@ function generateIssueCards(issues, affected, screenshot) {
     <h2 class="font-medium mb-2">Page Screenshot:</h2>
     <div class="node-item">
         ${fs.existsSync(`${BASE_DIR}${PAGES_DIR}/${screenshot?.replace(".png", `_${i + 1}.png`)}`) ?
-                `<img src=".${PAGES_DIR}/${screenshot.replace(".png", `_${i + 1}.png`)}" alt="${screenshot.replace(".png", `_${i + 1}.png`)} screenshot" class="w-full h-auto rounded" />` :
+                `<img src="./${screenshot.replace(".png", `_${i + 1}.png`)}" alt="${screenshot.replace(".png", `_${i + 1}.png`)} screenshot" class="w-full h-auto rounded" />` :
                 '<p class="text-gray-500">No screenshot available</p>'
             }
     </div>
@@ -456,8 +548,8 @@ function generateTableCards(reports) {
         const lastTested = report.timestamp || 'N/A';
 
         tableRows += `
-            <tr onclick="showReport('${report.id}')">
-                <td class="url-cell"><a href="#">${report.pagePath !== undefined ? report.pagePath : report.id }</a></td>
+            <tr>
+               <td class="url-cell"><a href="./pages/${report.id}.html">${report.pagePath || report.id}</a></td>
                 <!--<td>${standard}</td>-->
                 <td class="status-cell violations">${violations}</td>
                 <td class="status-cell incomplete">${incomplete}</td>
@@ -613,11 +705,12 @@ function generateDisabilityAffected(reports, affected) {
 
 // Main function to generate the report
 function generateReport() {
+    const template = fs.readFileSync(path.join(__dirname, './index.template.html'), 'utf8');
     const reports = readAllJsonAndPutIntoArray();
     const affected = readJSONFile(__dirname + "/disabilityAffectedData/" + getAxeVersion(reports[0].testEngine.version) + ".json");
 
     reports.forEach(report => {
-        let baseContent = generateBaseContent(report);
+        let baseContent = generateBaseContent(template, report);
         let searchBar = generateSearchBar();
         let tabs = generateTabs(report);
         let violationsIssueCards = generateIssueCards(report.violations, affected, report.id + "_violations.png");
@@ -636,22 +729,24 @@ function generateReport() {
 }
 
 function generateDashboard() {
-    let template = fs.readFileSync(path.join(__dirname, './index.template.html'), 'utf8');
+    const template = fs.readFileSync(path.join(__dirname, './index.template.html'), 'utf8');
     const outputPath = path.join(process.cwd(), BASE_DIR, 'index.html');
     const reports = readAllJsonAndPutIntoArray();
     const affected = readJSONFile(__dirname + "/disabilityAffectedData/" + getAxeVersion(reports[0].testEngine.version) + ".json");
 
+
+    let dashboardBody = generateBaseDashboard(template);
     const summaryCards = generateSummaryCart(reports);
     const tableCards = generateTableCards(reports);
     const impactDistributionChart = generateImpactDistribution(reports);
     const disabilityAffected = generateDisabilityAffected(reports, affected);
 
-    template = template.replace('{{summary_cards}}', summaryCards);
-    template = template.replace('{{impact_distribution_chart}}', impactDistributionChart);
-    template = template.replace('{{disabilities_affected_chart}}', disabilityAffected);
-    template = template.replace('{{table_cards}}', tableCards);
+    dashboardBody = dashboardBody.replace('{{summary_cards}}', summaryCards);
+    dashboardBody = dashboardBody.replace('{{impact_distribution_chart}}', impactDistributionChart);
+    dashboardBody = dashboardBody.replace('{{disabilities_affected_chart}}', disabilityAffected);
+    dashboardBody = dashboardBody.replace('{{table_cards}}', tableCards);
 
-    fs.writeFileSync(outputPath, template, 'utf8');
+    fs.writeFileSync(outputPath, dashboardBody, 'utf8');
 
     console.log(`Report successfully generated to ${ path.join(process.cwd(), BASE_DIR)}`);
 }
@@ -756,6 +851,7 @@ function main() {
     generateDashboard();
 
     fs.copyFileSync(path.join(__dirname, './styles.css'), path.join(process.cwd(), BASE_DIR, './styles.css'));
+    fs.copyFileSync(path.join(__dirname, './main.js'), path.join(process.cwd(), BASE_DIR, './main.js'));
 
 }
 
