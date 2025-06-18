@@ -1,6 +1,6 @@
 {
   "name": "axe-playwright-report",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Playwright + axe-core integration to run accessibility scans and build HTML dashboard reports.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
