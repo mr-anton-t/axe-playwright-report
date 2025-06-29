@@ -17,7 +17,7 @@ function getAxeVersion(version) {
 }
 
 function escapeHTML(html) {
-    return html
+    return String(html ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
