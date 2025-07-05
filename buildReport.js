@@ -17,7 +17,7 @@ function getAxeVersion(version) {
 }
 
 function escapeHTML(html) {
-    return html
+    return String(html ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -86,12 +86,19 @@ function generateBaseContent(template, report) {
             <div class="container mx-auto p-4 max-w-6xl">
                 <!-- Header and Breadcrumb -->
                 <div class="mb-6">
-                   <div class="flex justify-between items-center">
+                   <div class="page-url flex justify-between items-center">
                         <h1 class="text-2xl font-bold">Page:  ${report.pagePath !== undefined ? report.pagePath : report.url}</h1>
+                        <div class="flex items-center">
                         <a href="${report.url}" target="_blank" class="text-blue-600 hover:text-blue-800">
-                            <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">View in Browser</button>
+                            <button class="border border-blue-600 text-blue-600 px-4 py-2 rounded hover:bg-blue-100">
+                              View in Browser
+                            </button>
                         </a>
+                        <button id="generateBugReportBtn" disabled class="ml-2 text-white px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 cursor-pointer">
+                          Generate Bug Report
+                        </button>
                     </div>
+                   </div>
                     <div class="text-sm text-gray-500 mt-2">
     <div>Browser: ${userAgent || 'N/A'}, Viewport: ${windowWidth || 0}×${windowHeight || 0}</div>
 </div>
@@ -105,9 +112,187 @@ function generateBaseContent(template, report) {
                 {{ISSUE_CARDS}}
             </div>
         </body>
+        <!-- Modal Backdrop -->
+     <div id="bugReportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+         <!-- Modal Content -->
+         <div class="bg-white rounded-lg p-6 max-w-2xl w-full shadow-lg">
+             <h2 class="text-xl font-bold mb-4">Bug Report</h2>
+
+           <div class="flex items-center mb-2">
+            <strong>Title:</strong>
+                <button id="copyBugTitleBtn" type="button" title="Copy to clipboard" class="ml-2 text-gray-500 hover:text-blue-600" style="background: none; border: none; cursor: pointer;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <rect x="8" y="8" width="12" height="12" rx="2" ry="2"></rect>
+                        <rect x="4" y="4" width="12" height="12" rx="2" ry="2"></rect>
+                    </svg>
+                </button>
+            </div>
+             <input id="bugTitle" class="mt-1 text-gray-800 w-full border rounded p-2 text-sm" type="text" placeholder="Bug Title">
+
+            <div class="flex items-center mb-2">
+                <strong>Description:</strong>
+                <button id="copyBugSummaryBtn" type="button" title="Copy to clipboard" class="ml-2 text-gray-500 hover:text-blue-600" style="background: none; border: none; cursor: pointer;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <rect x="8" y="8" width="12" height="12" rx="2" ry="2"></rect>
+                        <rect x="4" y="4" width="12" height="12" rx="2" ry="2"></rect>
+                    </svg>
+                </button>
+            </div>
+            <textarea id="bugSummary" class="mt-1 text-gray-800 w-full border rounded p-2 text-sm" rows="20"></textarea>
+
+             <div class="text-right">
+                 <button id="closeBugModal" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                     Close
+                 </button>
+             </div>
+         </div>
+     </div>
     </main></body>
         `) + `
     <script>
+        
+        const bugBtn = document.getElementById('generateBugReportBtn');
+        const modal = document.getElementById('bugReportModal');
+        const closeBtn = document.getElementById('closeBugModal');
+  
+        document.getElementById('select-all-checkbox').addEventListener('change', function () {
+        const checked = this.checked;
+        document.querySelectorAll('input[type="checkbox"][id^="issue-"]:not([style*="display: none"])').forEach(cb => {
+            // Only select checkboxes that are visible
+            if (cb.offsetParent !== null) {
+                cb.checked = checked;
+            }
+        });
+    });
+            
+        
+        document.addEventListener('change', function () {
+            const anyChecked = document.querySelectorAll('input[type="checkbox"]:checked').length > 0;
+
+            bugBtn.disabled = !anyChecked;
+            bugBtn.classList.toggle('bg-blue-600', anyChecked);
+            bugBtn.classList.toggle('hover:bg-blue-700', anyChecked);
+            bugBtn.classList.toggle('cursor-pointer', anyChecked);
+            bugBtn.classList.toggle('bg-gray-300', !anyChecked);
+            bugBtn.classList.toggle('cursor-not-allowed', !anyChecked);
+        });
+
+        bugBtn.addEventListener('click', () => {
+            const bugTitle = document.getElementById('bugTitle');
+            const summaryEl = document.getElementById('bugSummary');
+            
+            const pageElement = document.querySelector(".page-url")
+            const pageTitle = pageElement.querySelector("h1").innerText.trim().split(" ")[1]
+            const pageUrl = pageElement.querySelector("a").getAttribute("href")
+               
+            const issueCardsList = Array.from(document.querySelectorAll('.issue-card')).filter(card => card.querySelector('input[type="checkbox"]:checked'));
+          
+            if (issueCardsList.length === 1) {
+                 const summary = issueCardsList[0].querySelector('.issue_description > p').innerText.trim();
+                 const issueId = issueCardsList[0].querySelector('.issue-id').innerText.trim();
+                 const impact = issueCardsList[0].querySelector(".issue-impact").innerText.trim();
+                 const tags = Array.from(issueCardsList[0].querySelectorAll('.tag_list span')).map(el => el.innerText.trim()).join(', ');
+                 const expectedResult =  issueCardsList[0].querySelector(".help-section").innerText.trim();
+                 const fixLink = issueCardsList[0].querySelector(".fix-link").getAttribute('href');
+                 const issues = Array.from(issueCardsList[0].querySelectorAll('.issue-card .failure-list li')).map(el => el.innerText.trim())
+                 const actualResult = "\\n- " + issues.join(" OR\\n- ");
+                 const affectedElements = Array.from(issueCardsList[0].querySelectorAll('.issue-card .node-html div')).map(el => el.innerText.trim()).join('\\n');
+                    
+                 bugTitle.value = "[A11y] " + summary + " at " + pageTitle + " page";
+           
+                 summaryEl.value = 
+                    "**Issue Id:** " + issueId + "\\n\\n" +
+                    "**URL:** " + pageUrl + "\\n\\n" +
+                    "**Impact:** " + impact + "\\n\\n" +
+                    "**Tags:** " + tags + "\\n\\n" +
+                    "**Steps:**\\n...\\n\\n"  +
+                    "**Expected Result:** " + expectedResult + "\\n\\n" +
+                    "**Actual Result:** " + actualResult + "\\n\\n" + 
+                    "**Affected Elements:**\\n\`\`\`html" + affectedElements + "\\n\`\`\`\\n\\n" + 
+                    "**Help Link:** " + fixLink; 
+            } else {
+                const templateContainer = []
+                 for (let i = 0; i < issueCardsList.length; i++) {
+                      const summary = issueCardsList[i].querySelector('.issue_description > p').innerText.trim();
+                     const impact = issueCardsList[i].querySelector(".issue-impact").innerText.trim();
+                     const impactColored = impact === 'critical' ? "🟥 " + impact : impact === 'serious' ? '🟧 ' + impact : impact === 'moderate' ? '🟩 ' + impact : impact;
+                     const issueId = issueCardsList[i].querySelector('.issue-id').innerText.trim();
+                     const issues = Array.from(issueCardsList[i].querySelectorAll('.issue-card .failure-list li')).map(el => el.innerText.trim())
+                     const expectedResult =  issueCardsList[i].querySelector(".help-section").innerText.trim();
+                     const affectedElements = Array.from(issueCardsList[i].querySelectorAll('.issue-card .node-html div')).map(el => el.innerText.trim()).join('\\n');
+                     const fixLink = issueCardsList[i].querySelector(".fix-link").getAttribute('href');
+                     
+                     const tmp =
+                          "** #" + (i + 1) + " " + impactColored + " – " + issueId + "**\\n\\n" +
+                          "**Affected Elements:**\\n\\n" +
+                          "\`\`\`html\\n" + affectedElements + "\\n\`\`\`\\n\\n" +
+                          "**Issue:** " + summary + "\\n\\n" +
+                          "**Fix:** " + expectedResult + "\\n\\n" +
+                          "**Help Link:** " + fixLink;
+                     templateContainer.push(tmp);
+                 }
+                 
+                  bugTitle.value = "[A11y] Accessibility Issues on Page: " + pageTitle;
+                  summaryEl.value = "**URL: **" +pageUrl + "\\n\\n" + templateContainer.join("\\n\\n---\\n\\n");
+            }
+            
+            
+            // const issueCards = document.querySelectorAll('.issue-card');
+            // for (const issueCard of issueCards) {
+            //     if (issueCard.querySelector('input[type="checkbox"]:checked')) {
+            //         const summary = issueCard.querySelector('.issue_description > p').innerText.trim();
+            //         const issueId = issueCard.querySelector('.issue-id').innerText.trim();
+            //         const pageElement = document.querySelector(".page-url")
+            //         const pageTitle = pageElement.querySelector("h1").innerText.trim().split(" ")[1]
+            //         const pageUrl = pageElement.querySelector("a").getAttribute("href")
+            //         const impact = issueCard.querySelector(".issue-impact").innerText.trim();
+            //         const tags = Array.from(issueCard.querySelectorAll('.tag_list span')).map(el => el.innerText.trim()).join(', ');
+            //         const expectedResult =  issueCard.querySelector(".help-section").innerText.trim();
+            //         const fixLink = issueCard.querySelector(".fix-link").getAttribute('href');
+            //         const issues = Array.from(issueCard.querySelectorAll('.issue-card .failure-list li')).map(el => el.innerText.trim())
+            //         const actualResult = "\\n- " + issues.join(" OR\\n- ");
+            //         const affectedElements = Array.from(issueCard.querySelectorAll('.issue-card .node-html div')).map(el => el.innerText.trim()).join('\\n');
+            //        
+            //          bugTitle.value = "[A11y] " + summary + " at " + pageTitle + " page";
+            //
+            //         summaryEl.value = "**Issue Id:** " + issueId + "\\n\\n" + "**URL:** " + pageUrl + "\\n\\n" + "**Impact:** " + impact + "\\n\\n" + "**Tags:** " + tags + "\\n\\n" + "**Steps:**\\n...\\n\\n"  + "**Expected Result:** " + expectedResult + "\\n\\n" + "**Actual Result:** " + actualResult + "\\n\\n" + "**Affected Elements:**\\n<code>" + affectedElements + "</code>\\n\\n" + "**Help Link:** " + fixLink;
+            //
+            //     }
+            // } 
+          
+            modal.classList.remove('hidden'); // 💡 this makes it visible
+        });
+
+        closeBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+        
+        document.getElementById('copyBugSummaryBtn').addEventListener('click', function() {
+            const summary = document.getElementById('bugSummary');
+            summary.select();
+            document.execCommand('copy');
+        });
+        
+        document.getElementById('copyBugTitleBtn').addEventListener('click', function() {
+            const summary = document.getElementById('bugSummary');
+            summary.select();
+            document.execCommand('copy');
+        });
+        
+         document.addEventListener('change', function () {
+            const anyChecked = document.querySelectorAll('input[type="checkbox"]:checked').length > 0;
+
+            if (anyChecked) {
+                bugBtn.disabled = false;
+                bugBtn.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                bugBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'cursor-pointer');
+            } else {
+                bugBtn.disabled = true;
+                bugBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'cursor-pointer');
+                bugBtn.classList.add('bg-gray-300', 'cursor-not-allowed');
+            }
+        });
+    
         window.addEventListener('DOMContentLoaded', () => {
             const violationsTab = document.querySelector('[data-tab="violations"]');
             if (violationsTab) violationsTab.click();
@@ -132,7 +317,7 @@ function generateBaseContent(template, report) {
          });
             })
             
-         document.querySelectorAll('.toggle-details').forEach(button => {
+        document.querySelectorAll('.toggle-details').forEach(button => {
             button.addEventListener('click', function (e) {
                 e.stopPropagation(); // Prevent event bubbling to parent elements
                 const nodeDetails = this.nextElementSibling;
@@ -306,7 +491,10 @@ function generateTabs(report) {
 
     return `
         <div class="mb-6">
-            <div class="grid grid-cols-4 gap-2 border-b">
+            <div class="grid grid-cols-[auto_1fr_1fr_1fr] gap-2 border-b">
+            <label class="flex items-center justify-center cursor-pointer select-none mr-3 ml-5">
+                    <input type="checkbox" id="select-all-checkbox" class="w-4 h-4">
+            </label>
                 ${tabContent}
             </div>
         </div>
@@ -338,6 +526,13 @@ function generateIssueCards(issues, affected, screenshot) {
         return rule ? rule['disabilityTypesAffected'] || [] : [];
     }
 
+    escapeHTML(undefined); // ❌ TypeError
+    escapeHTML(null);      // ❌ TypeError
+    escapeHTML(12345);     // ❌ Works, because numbers convert to string
+    escapeHTML(['a', 'b']); // ❌ Works, coerces to string "a,b"
+    escapeHTML({});
+    console.log("ASSDSDD")
+
     let issueCards = '';
     if (!issues || issues.length === 0) {
         issueCards = `
@@ -349,13 +544,17 @@ function generateIssueCards(issues, affected, screenshot) {
         for (let i = 0; i < issues.length; i++) {
             const issue = issues[i];
             issueCards += `
-                <div class="issue-card mb-4 border rounded-lg" data-id="${issue.id}">
+                <div class="issue-card mb-4 border rounded-lg" data-id="issue-card-${issue.id}">
                     <div class="py-2 px-4">
-                        <div class="flex justify-between items-center mb-4 cursor-pointer" onclick="toggleIssueCard(this)">
+                        <div class="flex items-center gap-5 w-full cursor-pointer relative" onclick="toggleIssueCard(this)">
+                        <div class="flex items-center pl-1">
+                                <input type="checkbox" id="issue-${issue.id}" class="issue-checkbox w-4 h-4" onclick="event.stopPropagation();">
+                            </div>
+                        <div class="flex justify-between items-center mb-4 w-full block cursor-pointer relative" onclick="toggleIssueCard(this)">
                             <div>
                                 <div class="flex items-center gap-2 mt-2 mb-3">
-                                  <span class="${issue.impact === 'critical' ? 'bg-red-600' : issue.impact === 'serious' ? 'bg-orange-500' : issue.impact === 'minor' ? 'bg-blue-600' : 'bg-green-500'} text-white px-2 py-0.5 rounded text-sm">${issue.impact || 'none'}</span>
-                                    <h2 class="text-base font-semibold">${issue.id}</h2>
+                                  <span class="${issue.impact === 'critical' ? 'bg-red-600' : issue.impact === 'serious' ? 'bg-orange-500' : issue.impact === 'minor' ? 'bg-blue-600' : 'bg-green-500'} text-white issue-impact px-2 py-0.5 rounded text-sm">${issue.impact || 'none'}</span>
+                                    <h2 class="text-base issue-id font-semibold">${issue.id}</h2>
                                 </div>
 
                                 <div class="issue_description" class="mb-2">
@@ -374,8 +573,9 @@ function generateIssueCards(issues, affected, screenshot) {
 
 
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
-                                <path d="m9 18 6-6-6-6"/>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
+                                <path d="m9 18 9-9-9-9"/>
                             </svg>
                         </div>
                         <div class="issue-details hidden">
@@ -383,7 +583,7 @@ function generateIssueCards(issues, affected, screenshot) {
                         <div class="border-t pt-3">
                         <div class="flex">
                                 <h2 class="font-medium mb-2 flex-1">How to fix:</h2>
-                                <a href="${issue.helpUrl}" target="_blank" class="font-medium mb-2 text-blue-600 hover:text-blue-800">Learn more</a>
+                                <a href="${issue.helpUrl}" target="_blank" class="fix-link font-medium mb-2 text-blue-600 hover:text-blue-800">Learn more</a>
                         </div>
                             <div class="help-section">
                                         <p>${escapeHTML(issue.help)}</p>
@@ -415,7 +615,7 @@ function generateIssueCards(issues, affected, screenshot) {
                                                  <div class="node-item">
                                                          <div class="node-html">
                                                             <span class="element-number bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-sm mr-2">#${index + 1}</span>
-                                                            <code>${escapeHTML(node.target[0])}</code>
+                                                            <code>${escapeHTML({})}</code>
                                                             <button class="copy-button" aria-label="Copy to clipboard" onclick="copyToClipboard('${escapeHTML(node.target[0])}')">
     <svg xmlns="http://www.w3.org/2000/svg"
      width="18" height="18"
