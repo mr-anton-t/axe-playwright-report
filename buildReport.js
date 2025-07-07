@@ -1,8 +1,9 @@
 #!/usr/bin/env node
+
 const fs = require('fs');
 const path = require("path");
 const URL = require('url').URL;
-require('dotenv').config({path: path.join(process.cwd(), '.env.a11y')});
+require('dotenv').config({ path: path.join(process.cwd(), '.env.a11y') });
 
 const BASE_DIR = process.env.OUTPUT_DIR || './axe-playwright-report'
 const PAGES_DIR = '/pages';
@@ -63,7 +64,7 @@ function generateBaseDashboard(template) {
 }
 
 function generateBaseContent(template, report) {
-    const {userAgent, windowWidth, windowHeight} = report.testEnvironment || {};
+    const { userAgent, windowWidth, windowHeight } = report.testEnvironment || {};
 
     return template.replace("{{CONTENT}}",
         `<body>
@@ -94,7 +95,7 @@ function generateBaseContent(template, report) {
                               View in Browser
                             </button>
                         </a>
-                        <button id="generateBugReportBtn" disabled class="ml-2 text-white px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 cursor-pointer">
+                        <button id="generateBugReportBtn" class="ml-2 text-white px-4 py-2 rounded bg-gray-300 cursor-not-allowed" disabled="">
                           Generate Bug Report
                         </button>
                     </div>
@@ -390,26 +391,23 @@ function generateFilters(report, affected) {
             <!-- Impact Filter -->
             <div class="flex-1 min-w-[200px]">
                 <label for="impact-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Impact</label>
-                <select id="impact-filter" class="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Impacts</option>
-                      ${impactOptions}
+                <select id="impact-filter" class="select2-filter w-full" multiple="multiple" data-placeholder="Select impacts...">
+                    ${impactOptions}
                 </select>
             </div>
 
             <!-- Standards/Tags Filter -->
             <div class="flex-1 min-w-[200px]">
                 <label for="tag-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Standard</label>
-                <select id="tag-filter" class="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Standards</option>
-                      ${tagOptions}
+                <select id="tag-filter" class="select2-filter w-full" multiple="multiple" data-placeholder="Select standards...">
+                    ${tagOptions}
                 </select>
             </div>
 
             <!-- Disabilities Filter -->
             <div class="flex-1 min-w-[200px]">
                 <label for="disability-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Disability</label>
-                <select id="disability-filter" class="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Disabilities</option>
+                <select id="disability-filter" class="select2-filter w-full" multiple="multiple" data-placeholder="Select disabilities...">
                     ${disabilityOptions}
                 </select>
             </div>
@@ -438,12 +436,12 @@ function generateSearchBar() {
 
 function generateTabs(report) {
     const tabs = [{
-        id: 'violations',
-        name: 'Violations',
-        count: report.violations.length || 0,
-        color: 'text-red-600',
-        borderColor: 'border-red-500'
-    },
+            id: 'violations',
+            name: 'Violations',
+            count: report.violations.length || 0,
+            color: 'text-red-600',
+            borderColor: 'border-red-500'
+        },
         {
             id: 'incomplete',
             name: 'Incomplete',
@@ -526,13 +524,6 @@ function generateIssueCards(issues, affected, screenshot) {
         return rule ? rule['disabilityTypesAffected'] || [] : [];
     }
 
-    escapeHTML(undefined); // ❌ TypeError
-    escapeHTML(null);      // ❌ TypeError
-    escapeHTML(12345);     // ❌ Works, because numbers convert to string
-    escapeHTML(['a', 'b']); // ❌ Works, coerces to string "a,b"
-    escapeHTML({});
-    console.log("ASSDSDD")
-
     let issueCards = '';
     if (!issues || issues.length === 0) {
         issueCards = `
@@ -553,7 +544,7 @@ function generateIssueCards(issues, affected, screenshot) {
                         <div class="flex justify-between items-center mb-4 w-full block cursor-pointer relative" onclick="toggleIssueCard(this)">
                             <div>
                                 <div class="flex items-center gap-2 mt-2 mb-3">
-                                  <span class="${issue.impact === 'critical' ? 'bg-red-600' : issue.impact === 'serious' ? 'bg-orange-500' : issue.impact === 'minor' ? 'bg-blue-600' : 'bg-green-500'} text-white issue-impact px-2 py-0.5 rounded text-sm">${issue.impact || 'none'}</span>
+                                  <span class="${issue.impact === 'critical' ? 'bg-red-600' : issue.impact === 'serious' ? 'bg-orange-500' : issue.impact === 'moderate' ? 'bg-yellow-500' : 'bg-green-500'} text-white issue-impact px-2 py-0.5 rounded text-sm">${issue.impact || 'none'}</span>
                                     <h2 class="text-base issue-id font-semibold">${issue.id}</h2>
                                 </div>
 
@@ -615,7 +606,7 @@ function generateIssueCards(issues, affected, screenshot) {
                                                  <div class="node-item">
                                                          <div class="node-html">
                                                             <span class="element-number bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-sm mr-2">#${index + 1}</span>
-                                                            <code>${escapeHTML({})}</code>
+                                                           <code>${escapeHTML(node.target[0])}</code>
                                                             <button class="copy-button" aria-label="Copy to clipboard" onclick="copyToClipboard('${escapeHTML(node.target[0])}')">
     <svg xmlns="http://www.w3.org/2000/svg"
      width="18" height="18"

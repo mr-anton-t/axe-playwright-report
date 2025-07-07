@@ -29,7 +29,7 @@ function copyToClipboard(text) {
 
 function setupToggleDetailsButtons() {
     document.querySelectorAll('.toggle-details').forEach(button => {
-        button.addEventListener('click', function (e) {
+        button.addEventListener('click', function(e) {
             e.stopPropagation();
             const nodeDetails = this.nextElementSibling;
             nodeDetails.classList.toggle('hidden');
@@ -156,9 +156,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         rows.forEach((row, index) => {
             row.style.display =
-                index >= (currentPageTable - 1) * rowsPerPage && index < currentPageTable * rowsPerPage
-                    ? ''
-                    : 'none';
+                index >= (currentPageTable - 1) * rowsPerPage && index < currentPageTable * rowsPerPage ?
+                '' :
+                'none';
         });
 
         const controls = document.getElementById('pagination-controls');
@@ -179,15 +179,29 @@ document.addEventListener('DOMContentLoaded', () => {
     window.onload = paginateTable;
 });
 
+// Initialize Select2 for multi-select filters
+function initializeSelect2() {
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        $('.select2-filter').select2({
+            placeholder: function() {
+                return $(this).data('placeholder');
+            },
+            allowClear: true,
+            width: '100%'
+        });
+    }
+}
+
 function applyFilters(impactFilter, tagFilter, disabilityFilter) {
     if (!impactFilter || !tagFilter || !disabilityFilter) return;
 
-    const impactValue = impactFilter.value.toLowerCase();
-    const tagValue = tagFilter.value.toLowerCase();
-    const disabilityValue = disabilityFilter.value.toLowerCase();
+    // Get selected values from Select2 (multiple selections)
+    const impactValues = $(impactFilter).val() || [];
+    const tagValues = $(tagFilter).val() || [];
+    const disabilityValues = $(disabilityFilter).val() || [];
 
-    // First check if any filters are active
-    const isFiltering = impactValue || tagValue || disabilityValue;
+    // Check if any filters are active
+    const isFiltering = impactValues.length > 0 || tagValues.length > 0 || disabilityValues.length > 0;
 
     // Track visible counts for each tab
     const visibleCounts = {
@@ -205,36 +219,48 @@ function applyFilters(impactFilter, tagFilter, disabilityFilter) {
 
         let showCard = true;
 
-        // Impact filtering
-        if (impactValue) {
+        // Impact filtering - check if any selected impact matches
+        if (impactValues.length > 0) {
             const impactEl = card.querySelector(`.bg-red-600, .bg-orange-500, .bg-blue-600, .bg-green-500`);
-            if (!impactEl || !impactEl.textContent.toLowerCase().includes(impactValue)) {
+            if (!impactEl) {
                 showCard = false;
+            } else {
+                const cardImpact = impactEl.textContent.toLowerCase();
+                const hasMatchingImpact = impactValues.some(selectedImpact =>
+                    cardImpact.includes(selectedImpact.toLowerCase())
+                );
+                if (!hasMatchingImpact) {
+                    showCard = false;
+                }
             }
         }
 
-        // Tag filtering
-        if (tagValue && showCard) {
+        // Tag filtering - check if any selected tag matches
+        if (tagValues.length > 0 && showCard) {
             const tagElements = card.querySelectorAll(".tag_list span");
-            let hasTag = false;
+            let hasMatchingTag = false;
             tagElements.forEach(tag => {
-                if (tag.textContent.toLowerCase().includes(tagValue)) {
-                    hasTag = true;
+                const tagText = tag.textContent.toLowerCase();
+                if (tagValues.some(selectedTag => tagText.includes(selectedTag.toLowerCase()))) {
+                    hasMatchingTag = true;
                 }
             });
-            if (!hasTag) showCard = false;
+            if (!hasMatchingTag) showCard = false;
         }
 
-        // Disability filtering
-        if (disabilityValue && showCard) {
+        // Disability filtering - check if any selected disability matches
+        if (disabilityValues.length > 0 && showCard) {
             const disabilityElements = card.querySelectorAll(".disability_list span");
-            let hasDisability = false;
+            let hasMatchingDisability = false;
             disabilityElements.forEach(disability => {
-                if (disability.textContent.toLowerCase().includes(disabilityValue)) {
-                    hasDisability = true;
+                const disabilityText = disability.textContent.toLowerCase();
+                if (disabilityValues.some(selectedDisability =>
+                        disabilityText.includes(selectedDisability.toLowerCase())
+                    )) {
+                    hasMatchingDisability = true;
                 }
             });
-            if (!hasDisability) showCard = false;
+            if (!hasMatchingDisability) showCard = false;
         }
 
         card.style.display = showCard ? "" : "none";
@@ -266,7 +292,6 @@ function applyFilters(impactFilter, tagFilter, disabilityFilter) {
             }
         }
     });
-
 }
 
 // Add pagination function
@@ -392,22 +417,33 @@ function showDashboard() {
 function showReport(filePath) {
     window.location.href = `./pages/${filePath}.html`;
 
-
-    // Automatically activate the 'incomplete' tab on page load
+    // Automatically activate the 'violations' tab on page load
     const violationsTab = document.querySelector('[data-tab="violations"]');
     violationsTab.click();
 
-    // Reattach event listeners if necessary
-    const impactFilter = document.getElementById("impact-filter");
-    const tagFilter = document.getElementById("tag-filter");
-    const disabilityFilter = document.getElementById("disability-filter");
+    // Initialize Select2 after DOM is loaded
+    $(document).ready(function() {
+        initializeSelect2();
 
-    if (impactFilter) impactFilter.addEventListener("change", () => applyFilters(impactFilter, tagFilter, disabilityFilter));
-    if (tagFilter) tagFilter.addEventListener("change", () => applyFilters(impactFilter, tagFilter, disabilityFilter));
-    if (disabilityFilter) disabilityFilter.addEventListener("change", () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+        // Get filter elements
+        const impactFilter = document.getElementById("impact-filter");
+        const tagFilter = document.getElementById("tag-filter");
+        const disabilityFilter = document.getElementById("disability-filter");
 
-    // Apply filters to the loaded content
-    applyFilters(impactFilter, tagFilter, disabilityFilter);
+        // Add Select2 change event listeners
+        if (impactFilter) {
+            $(impactFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+        }
+        if (tagFilter) {
+            $(tagFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+        }
+        if (disabilityFilter) {
+            $(disabilityFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+        }
+
+        // Apply filters to the loaded content
+        applyFilters(impactFilter, tagFilter, disabilityFilter);
+    });
 }
 
 function switchTab(tabId) {
@@ -416,3 +452,24 @@ function switchTab(tabId) {
     document.getElementById(`${tabId}-content`).classList.add('active');
     document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
 }
+
+// Initialize everything when DOM is ready
+$(document).ready(function() {
+    // Initialize Select2
+    initializeSelect2();
+
+    // Set up filter event listeners
+    const impactFilter = document.getElementById("impact-filter");
+    const tagFilter = document.getElementById("tag-filter");
+    const disabilityFilter = document.getElementById("disability-filter");
+
+    if (impactFilter) {
+        $(impactFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+    }
+    if (tagFilter) {
+        $(tagFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+    }
+    if (disabilityFilter) {
+        $(disabilityFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+    }
+});

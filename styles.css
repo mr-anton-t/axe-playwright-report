@@ -9,16 +9,26 @@
     --dark-gray: #515151;
     --text: #333;
     --border: #ddd;
-    --blind-color: #1f77b4; /* Blue */
-    --deafblind-color: #ff7f0e; /* Orange */
-    --mobility-color: #2ca02c; /* Green */
-    --low-vision-color: #d62728; /* Red */
-    --cognitive-color: #9467bd; /* Purple */
-    --colorblindness-color: #8c564b; /* Brown */
-    --deaf-color: #e377c2; /* Pink */
-    --attention-deficit-color: #7f7f7f; /* Gray */
-    --sighted-keyboard-users-color: #bcbd22; /* Olive */
-    --dyslexia-color: #17becf; /* Cyan */
+    --blind-color: #1f77b4;
+    /* Blue */
+    --deafblind-color: #ff7f0e;
+    /* Orange */
+    --mobility-color: #2ca02c;
+    /* Green */
+    --low-vision-color: #d62728;
+    /* Red */
+    --cognitive-color: #9467bd;
+    /* Purple */
+    --colorblindness-color: #8c564b;
+    /* Brown */
+    --deaf-color: #e377c2;
+    /* Pink */
+    --attention-deficit-color: #7f7f7f;
+    /* Gray */
+    --sighted-keyboard-users-color: #bcbd22;
+    /* Olive */
+    --dyslexia-color: #17becf;
+    /* Cyan */
 }
 
 .visually-hidden {
@@ -193,7 +203,8 @@ h1 {
 }
 
 .card-header {
-    border-bottom: 1px solid #555; /* line ander Total Reports*/
+    border-bottom: 1px solid #555;
+    /* line ander Total Reports*/
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -220,7 +231,6 @@ h1 {
     color: var(--warning);
 }
 
-
 .passes {
     color: var(--success);
 }
@@ -234,6 +244,7 @@ h1 {
     display: inline-block;
     cursor: pointer;
 }
+
 .inapplicable-tooltip-wrapper {
     position: relative;
     display: inline-block;
@@ -247,7 +258,8 @@ h1 {
     border-radius: 4px;
     position: absolute;
     z-index: 99999;
-    top: 100%; /* under the icon */
+    top: 100%;
+    /* under the icon */
     left: 50%;
     transform: translateX(-50%);
     white-space: normal;
@@ -257,11 +269,12 @@ h1 {
     font-weight: normal;
     opacity: 0;
     transition: opacity 0.2s;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.28) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
     border: 2px solid #e0e0e0 !important;
     pointer-events: none;
     word-break: break-word;
 }
+
 .inapplicable-tooltip-wrapper:hover .tooltip-text,
 .inapplicable-tooltip-wrapper:focus-within .tooltip-text {
     visibility: visible;
@@ -314,7 +327,8 @@ h1 {
 .chart-container {
     display: flex;
     flex-direction: column;
-    gap: 2rem; /* spacing between chart and bars */
+    gap: 2rem;
+    /* spacing between chart and bars */
     margin-bottom: 30px;
 }
 
@@ -334,10 +348,12 @@ h1 {
 
 .chart {
     flex: 1;
-    margin-top: 0; /* Remove any top margin from the parent container */
+    margin-top: 0;
+    /* Remove any top margin from the parent container */
     min-width: 300px;
     min-height: 200px;
-    height: auto; /* Adjust height dynamically */
+    height: auto;
+    /* Adjust height dynamically */
     overflow-y: auto;
     background-color: white;
     border-radius: 10px;
@@ -350,14 +366,17 @@ h1 {
 .horizontal-bar-chart::-webkit-scrollbar {
     width: 6px;
 }
+
 .horizontal-bar-chart::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 3px;
 }
+
 .horizontal-bar-chart::-webkit-scrollbar-thumb {
     background: #666;
     border-radius: 3px;
 }
+
 .horizontal-bar-chart::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
@@ -374,12 +393,25 @@ h1 {
     margin-bottom: 15px;
 }
 
+
 /*.impact-circle {*/
+
+
 /*    width: 200px;*/
+
+
 /*    height: 200px;*/
+
+
 /*    border-radius: 50%;*/
+
+
 /*    position: relative;*/
+
+
 /*    background: conic-gradient(var(--danger) 0% 40%, var(--warning) 40% 65%, var(--info) 65% 85%, #999 85% 100%);*/
+
+
 /*}*/
 
 #pagination-controls {
@@ -390,7 +422,9 @@ h1 {
     gap: 10px;
 }
 
+
 /* Style for pagination buttons */
+
 #pagination-controls button {
     padding: 8px 12px;
     font-size: 14px;
@@ -466,13 +500,17 @@ h1 {
     transform: rotate(180deg);
 }
 
+
 /* Hover effect for buttons */
+
 #pagination-controls button:hover {
     background-color: #007bff;
     color: #fff;
 }
 
+
 /* Active button style */
+
 #pagination-controls button:disabled {
     background-color: #007bff;
     color: #fff;
@@ -480,16 +518,37 @@ h1 {
     border-color: #007bff;
 }
 
+
 /*.impact-circle::after {*/
+
+
 /*    content: "";*/
+
+
 /*    position: absolute;*/
+
+
 /*    top: 50%;*/
+
+
 /*    left: 50%;*/
+
+
 /*    transform: translate(-50%, -50%);*/
+
+
 /*    width: 70%;*/
+
+
 /*    height: 70%;*/
+
+
 /*    border-radius: 50%;*/
+
+
 /*    background-color: white;*/
+
+
 /*}*/
 
 .impact-legend {
@@ -512,6 +571,7 @@ h1 {
     border-radius: 2px;
     margin-right: 5px;
 }
+
 
 /* Accessibility categories with unique colors */
 
@@ -672,13 +732,17 @@ tr:hover {
     font-weight: 500;
 }
 
+
 /* Make strategy buttons with data-tab attribute take full width of parent grid */
+
 button[data-tab] {
     width: 100%;
 }
 
+
 /* Ensure the grid containing data-tab buttons uses the full width */
-div.mb-6 > .grid-cols-4 {
+
+div.mb-6>.grid-cols-4 {
     grid-template-columns: repeat(3, 1fr) !important;
 }
 
@@ -808,7 +872,7 @@ div.mb-6 > .grid-cols-4 {
     transition: max-height 0.3s ease;
 }
 
-.collapsed + .collapsible-content {
+.collapsed+.collapsible-content {
     max-height: 0;
 }
 
@@ -832,7 +896,6 @@ div.mb-6 > .grid-cols-4 {
     .report-layout {
         grid-template-columns: 1fr;
     }
-
     .summary-cards {
         flex-direction: column;
     }
@@ -842,7 +905,6 @@ div.mb-6 > .grid-cols-4 {
     .summary-cards {
         flex-direction: column;
     }
-
     .header-actions {
         flex-direction: column;
         align-items: flex-end;
@@ -853,14 +915,15 @@ div.mb-6 > .grid-cols-4 {
     .summary-cards {
         flex-direction: column;
     }
-
     .header-actions {
         flex-direction: column;
         align-items: flex-end;
     }
 }
+
 
 /* Style 3 - Stats With Icons */
+
 .icon-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -893,10 +956,25 @@ div.mb-6 > .grid-cols-4 {
     flex-shrink: 0;
 }
 
-.icon-total { background-color: #e8f4fd; color: #3498db; }
-.icon-violations { background-color: #fdeeee; color: #e74c3c; }
-.icon-incomplete { background-color: #fef5e8; color: #f39c12; }
-.icon-passes { background-color: #e8f6ef; color: #219653; }
+.icon-total {
+    background-color: #e8f4fd;
+    color: #3498db;
+}
+
+.icon-violations {
+    background-color: #fdeeee;
+    color: #e74c3c;
+}
+
+.icon-incomplete {
+    background-color: #fef5e8;
+    color: #f39c12;
+}
+
+.icon-passes {
+    background-color: #e8f6ef;
+    color: #219653;
+}
 
 .icon-content {
     flex-grow: 1;
@@ -914,5 +992,81 @@ div.mb-6 > .grid-cols-4 {
     font-weight: bold;
     margin: 0;
     color: #333;
+}
 
+
+/* Select2 Custom Styles */
+
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    min-height: 38px;
+    padding: 4px 8px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    margin: 2px 4px 2px 0;
+    font-size: 0.875rem;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: white;
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    padding-left: 5px;
+    font-size: 1rem;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #fbbf24;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    padding: 0;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    margin-top: 0;
+    margin-left: 0;
+}
+
+.select2-container .select2-search--inline .select2-search__field {
+    height: 21px
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.select2-dropdown {
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.select2-container--default .select2-selection--multiple:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+
+/* Ensure Select2 dropdowns don't interfere with other elements */
+
+.select2-container {
+    z-index: 1050;
 }
