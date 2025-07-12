@@ -730,51 +730,211 @@ function generateSummaryCart(reports) {
 }
 
 function generateTableCards(reports) {
-    let tableRows = '';
-    reports.forEach(report => {
+    // Add sorting state and logic
+    const columns = [
+        { key: 'page', label: 'Page' },
+        { key: 'violations', label: 'Violations' },
+        { key: 'incomplete', label: 'Incomplete' },
+        { key: 'passes', label: 'Passes' },
+        { key: 'inapplicable', label: 'Inapplicable' },
+        { key: 'impacts', label: 'Impacts' }
+    ];
+    // Prepare data for sorting
+    let tableData = reports.map(report => {
         const standard = report.standard || 'N/A';
         const violations = report.violations ? report.violations.length : 0;
         const incomplete = report.incomplete ? report.incomplete.length : 0;
         const passes = report.passes ? report.passes.length : 0;
         const inapplicable = report.inapplicable ? report.inapplicable.length : 0;
-        const lastTested = report.timestamp ? formatDate(report.timestamp) : 'N/A';
-
-        tableRows += `
-            <tr>
-               <td class="url-cell"><a href="./pages/${report.id}.html">${report.pagePath || report.id}</a></td>
-                <!--<td>${standard}</td>-->
-                <td class="status-cell violations">${violations}</td>
-                <td class="status-cell incomplete">${incomplete}</td>
-                <td class="status-cell passes">${passes}</td>
-                <td class="status-cell inapplicable">${inapplicable}</td>
-                <td>${lastTested}</td>
-            </tr>
-        `;
+        let critical = 0, serious = 0, moderate = 0, none = 0;
+        ['violations', 'incomplete', 'passes'].forEach(section => {
+            if (report[section]) {
+                report[section].forEach(issue => {
+                    if (issue.impact === 'critical') critical++;
+                    else if (issue.impact === 'serious') serious++;
+                    else if (issue.impact === 'moderate') moderate++;
+                    else none++;
+                });
+            }
+        });
+        return {
+            id: report.id,
+            pagePath: report.pagePath || report.id,
+            violations,
+            incomplete,
+            passes,
+            inapplicable,
+            critical,
+            serious,
+            moderate,
+            none,
+            impactsSortKey: [critical, serious, moderate, none],
+            standard
+        };
     });
 
-    return `
-     <table>
-            <thead>
+    // Default sort: Violations desc
+    let sortKey = 'violations';
+    let sortDir = 'desc';
+
+    // Table header with sort icons
+    function getSortIcon(col) {
+        if (sortKey !== col) return '<span class="sort-icon" style="display:inline-block;width:1em;"></span>';
+        return sortDir === 'asc' ? '<span class="sort-icon" style="display:inline-block;width:1em;">↑</span>' : '<span class="sort-icon" style="display:inline-block;width:1em;">↓</span>';
+    }
+    // Remove getSortTitle function
+    function getInapplicableHeader() {
+        return `Inapplicable ${getSortIcon('inapplicable')}
+            <span class="inapplicable-tooltip-wrapper" style="position: relative;">
+                <span style="border-bottom:1px dotted #000; cursor:pointer;">&#9432;</span>
+                <span class="tooltip-text">Rules that didn’t apply because the page had no relevant elements to test</span>
+            </span>`;
+    }
+
+    let tableHeader = `
+        <tr>
+            <th class="border-col" data-sort="pagePath">Page ${getSortIcon('pagePath')}</th>
+            <th class="center-cell" data-sort="violations">Violations ${getSortIcon('violations')}</th>
+            <th class="center-cell" data-sort="incomplete">Incomplete ${getSortIcon('incomplete')}</th>
+            <th class="center-cell" data-sort="passes">Passes ${getSortIcon('passes')}</th>
+            <th class="center-cell border-col" data-sort="inapplicable">${getInapplicableHeader()}</th>
+            <th class="center-cell" data-sort="impacts">Impacts ${getSortIcon('impacts')}</th>
+        </tr>
+    `;
+
+    // Sorting logic
+    function sortTableData() {
+        tableData.sort((a, b) => {
+            if (sortKey === 'impacts') {
+                for (let i = 0; i < 4; i++) {
+                    if (a.impactsSortKey[i] !== b.impactsSortKey[i]) {
+                        return sortDir === 'desc' ? (b.impactsSortKey[i] - a.impactsSortKey[i]) : (a.impactsSortKey[i] - b.impactsSortKey[i]);
+                    }
+                }
+                return 0;
+            }  else if (sortKey === 'pagePath') {
+                return (sortDir === 'asc' ? 1 : -1) * a.pagePath.localeCompare(b.pagePath);
+            } else if (typeof a[sortKey] === 'string') {
+                return (sortDir === 'asc' ? 1 : -1) * a[sortKey].localeCompare(b[sortKey]);
+            } else {
+                return sortDir === 'asc' ? (a[sortKey] - b[sortKey]) : (b[sortKey] - a[sortKey]);
+            }
+        });
+    }
+    sortTableData();
+
+    function renderTableRows() {
+        return tableData.map(row => `
             <tr>
-                <th>Page</th>
-                <!--<th>Standard</th>-->
-                <th>Violations</th>
-                <th>Incomplete</th>
-                <th>Passes</th>
-                  <th>Inapplicable 
-                  <span class="inapplicable-tooltip-wrapper">
-                    <span style="border-bottom:1px dotted #000; cursor:pointer;">&#9432;</span>
-                    <span class="tooltip-text">Rules that didn’t apply because the page had no relevant elements to test</span>
-                  </span>
-                </th>
-                 <th>Last Tested</th>
-            </thead>
+                <td class="url-cell border-col"><a href="./pages/${row.id}.html">${row.pagePath}</a></td>
+                <td class="status-cell violations center-cell">${row.violations}</td>
+                <td class="status-cell incomplete center-cell">${row.incomplete}</td>
+                <td class="status-cell passes center-cell">${row.passes}</td>
+                <td class="status-cell inapplicable center-cell border-col">${row.inapplicable}</td>
+                <td class="center-cell">
+                    <span class='bg-red-600 text-white px-2 py-0.5 rounded'>C:${row.critical}</span> 
+                    <span class='bg-orange-600 text-white px-2 py-0.5 rounded'>S:${row.serious}</span> 
+                    <span class='bg-yellow-600 text-white px-2 py-0.5 rounded'>M:${row.moderate}</span> 
+                    <span class='bg-gray-400 text-white px-2 py-0.5 rounded'>N:${row.none}</span> 
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Table with header and rows
+    const tableHtml = `
+        <table id="sortable-table">
+            <thead>${tableHeader}</thead>
             <tbody id="table-body">
-                ${tableRows}
+                ${renderTableRows()}
             </tbody>
         </table>
         <div id="pagination-controls"></div>
-    `
+        <script>
+        (function() {
+            let sortKey = '${sortKey}';
+            let sortDir = '${sortDir}';
+            const tableData = ${JSON.stringify(tableData)};
+            function getSortIcon(col) {
+    if (sortKey !== col) return '<span class="sort-icon" style="display:inline-block;width:1em;">&nbsp;</span>';
+    if (col === 'impacts') {
+        // For impacts, reverse the icon logic
+        return sortDir === 'asc' ? '<span class="sort-icon" style="display:inline-block;width:1em;">↓</span>' : '<span class="sort-icon" style="display:inline-block;width:1em;">↑</span>';
+    }
+    return sortDir === 'asc' ? '<span class="sort-icon" style="display:inline-block;width:1em;">↑</span>' : '<span class="sort-icon" style="display:inline-block;width:1em;">↓</span>';
+}
+            function getInapplicableHeader() {
+                return 'Inapplicable ' + getSortIcon('inapplicable') +
+                    '<span class="inapplicable-tooltip-wrapper" style="position: relative;">' +
+                        '<span style="border-bottom:1px dotted #000; cursor:pointer;">&#9432;</span>' +
+                        '<span class="tooltip-text">Rules that didn’t apply because the page had no relevant elements to test</span>' +
+                    '</span>';
+            }
+            function sortTableData() {
+                tableData.sort(function(a, b) {
+                    if (sortKey === 'impacts') {
+                        for (let i = 0; i < 4; i++) {
+                            if (a.impactsSortKey[i] !== b.impactsSortKey[i]) {
+                                return (sortDir === 'asc' ? 1 : -1) * (b.impactsSortKey[i] - a.impactsSortKey[i]);
+                            }
+                        }
+                        return 0;
+                    } else if (sortKey === 'pagePath') {
+                        return (sortDir === 'asc' ? 1 : -1) * a.pagePath.localeCompare(b.pagePath);
+                    } else if (typeof a[sortKey] === 'string') {
+                        return (sortDir === 'asc' ? 1 : -1) * a[sortKey].localeCompare(b[sortKey]);
+                    } else {
+                        return sortDir === 'asc' ? (a[sortKey] - b[sortKey]) : (b[sortKey] - a[sortKey]);
+                    }
+                });
+            }
+            function renderTableRows() {
+                return tableData.map(function(row) {
+                    return '<tr>' +
+                        '<td class="url-cell border-col"><a href="./pages/' + row.id + '.html">' + row.pagePath + '</a></td>' +
+                        '<td class="status-cell violations center-cell">' + row.violations + '</td>' +
+                        '<td class="status-cell incomplete center-cell">' + row.incomplete + '</td>' +
+                        '<td class="status-cell passes center-cell">' + row.passes + '</td>' +
+                        '<td class="status-cell inapplicable center-cell border-col">' + row.inapplicable + '</td>' +
+                        '<td class="center-cell">' +
+    "<span class='bg-red-600 text-white px-2 py-0.5 rounded'>C:" + row.critical + "</span> " +
+    "<span class='bg-orange-600 text-white px-2 py-0.5 rounded'>S:" + row.serious + "</span> " +
+    "<span class='bg-yellow-600 text-white px-2 py-0.5 rounded'>M:" + row.moderate + "</span> " +
+    "<span class='bg-gray-400 text-white px-2 py-0.5 rounded'>N:" + row.none + "</span>" +
+'</td>' +
+                    '</tr>';
+                }).join('');
+            }
+            function updateTable() {
+                sortTableData();
+                document.getElementById('table-body').innerHTML = renderTableRows();
+                // Update sort icons
+                document.querySelectorAll('#sortable-table th[data-sort]').forEach(function(th) {
+                    const col = th.getAttribute('data-sort');
+                    if (col === 'inapplicable') {
+                        th.innerHTML = getInapplicableHeader();
+                    } else {
+                        th.innerHTML = th.textContent.replace(/[⇅↑↓]/g, '') + (col === sortKey ? ' ' + getSortIcon(col) : '');
+                    }
+                });
+            }
+            document.querySelectorAll('#sortable-table th[data-sort]').forEach(function(th) {
+                th.style.cursor = 'pointer';
+                th.addEventListener('click', function() {
+                    const col = th.getAttribute('data-sort');
+                    if (sortKey === col) {
+                        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortKey = col;
+                        sortDir = 'desc';
+                    }
+                    updateTable();
+                });
+            });
+        })();
+        </script>
+    `;
+    return tableHtml;
 }
 
 function generateImpactDistribution(reports) {
