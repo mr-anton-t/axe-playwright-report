@@ -114,6 +114,18 @@ This will generate an interactive HTML dashboard in your output directory.
 - **Per-page results**: JSON files for each scanned page.
 - **Screenshots**: PNGs highlighting issues (if enabled).
 
+## Generating Bug Summary Reports
+
+You can generate bug summary reports directly from report page for selected accessibility issues.  
+This feature allows you to quickly create bug reports with pre-filled titles and descriptions, saving time on repetitive reporting tasks.  
+Based on the amount of selected issues, it generates either a single bug report for each issue or a grouped report for multiple issues.
+
+#### Single Bug Report Example
+![Single Bug Report Example](./assets/single_bug_report.png)
+#### Grouped Bug Report Example
+![Grouped Bug Report Example](./assets/grouped_bug_report.png)
+
+
 ### Example Report
 
 Below is an example of the generated dashboard report:

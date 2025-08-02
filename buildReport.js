@@ -1175,7 +1175,7 @@ function generateDashboard() {
 
     fs.writeFileSync(outputPath, dashboardBody, 'utf8');
 
-    console.log(`Report successfully generated to ${path.join(process.cwd(), BASE_DIR)}` + 'index.html');
+ console.log(`Report successfully generated: file://${path.join(process.cwd(), BASE_DIR, 'index.html')}`);
 }
 
 function deduplicate(strategy) {
