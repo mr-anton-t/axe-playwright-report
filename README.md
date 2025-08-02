@@ -84,7 +84,7 @@ Create a `.env.a11y` file in your project root:
 ```
 SCAN=on
 OUTPUT_DIR=custom-report-dir
-MERGE_REPORTS=best
+MERGE_STRATEGY=best
 SCREENSHOT=on
 TAGS=wcag2a,wcag2aa
 ```
