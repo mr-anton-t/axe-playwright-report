@@ -155,6 +155,7 @@ function loadEnvConfig(envPath: string = ".env.a11y") {
 async function highlightElement(element: Locator, index: number, color: string) {
     try {
         await element.evaluate((el, args) => {
+            el.scrollIntoView({ behavior: "auto", block: "center" });
             el.style.position = "relative"; // Ensure proper placement
             el.style.outline = `2px solid ${args.color}`; // Highlight border with given color
 

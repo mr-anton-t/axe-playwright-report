@@ -46,7 +46,7 @@ function setupToggleDetailsButtons() {
 function getTabColor(tab) {
     const colors = {
         'violations': 'text-red-600 border-red-500',
-        'incomplete': 'text-blue-600 border-blue-500',
+        'incomplete': 'text-yellow-800 border-yellow-800',
         'inapplicable': 'text-orange-500 border-orange-500',
         'passes': 'text-green-500 border-green-500'
     };
@@ -62,8 +62,8 @@ function setupTabs() {
 
             // Update active tab styling
             tabs.forEach(t => {
-                t.classList.remove('active', 'text-red-600', 'text-orange-500', 'text-blue-600', 'text-green-500');
-                t.classList.remove('border-red-500', 'border-orange-500', 'border-blue-500', 'border-green-500');
+                t.classList.remove('active', 'text-red-600', 'text-orange-500', 'text-yellow-800', 'text-green-500');
+                t.classList.remove('border-red-500', 'border-orange-500', 'border-yellow-800', 'border-green-500');
             });
 
             // Set active class for styling
@@ -113,8 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Update active tab styling
             tabs.forEach(t => {
-                t.classList.remove('active', 'text-red-600', 'text-orange-500', 'text-blue-600', 'text-green-500');
-                t.classList.remove('border-red-500', 'border-orange-500', 'border-blue-500', 'border-green-500');
+                t.classList.remove('active', 'text-red-600', 'text-orange-500', 'text-yellow-800', 'text-green-500');
+                t.classList.remove('border-red-500', 'border-orange-500', 'border-yellow-800', 'border-green-500');
             });
 
             // Set active class for styling
@@ -150,9 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const tableBody = document.getElementById('table-body');
         const rows = tableBody.querySelectorAll('tr');
         const totalPages = Math.ceil(rows.length / rowsPerPage);
-
-        console.log(rows)
-        console.log(totalPages)
 
         rows.forEach((row, index) => {
             row.style.display =
@@ -221,7 +218,7 @@ function applyFilters(impactFilter, tagFilter, disabilityFilter) {
 
         // Impact filtering - check if any selected impact matches
         if (impactValues.length > 0) {
-            const impactEl = card.querySelector(`.bg-red-600, .bg-orange-500, .bg-blue-600, .bg-green-500`);
+            const impactEl = card.querySelector(`.issue-impact`);
             if (!impactEl) {
                 showCard = false;
             } else {
@@ -292,6 +289,7 @@ function applyFilters(impactFilter, tagFilter, disabilityFilter) {
             }
         }
     });
+    //updateSelectAllCheckboxState();
 }
 
 // Add pagination function
@@ -414,37 +412,37 @@ function showDashboard() {
     document.getElementById('breadcrumb-container').style.display = 'none';
 }
 
-function showReport(filePath) {
-    window.location.href = `./pages/${filePath}.html`;
-
-    // Automatically activate the 'violations' tab on page load
-    const violationsTab = document.querySelector('[data-tab="violations"]');
-    violationsTab.click();
-
-    // Initialize Select2 after DOM is loaded
-    $(document).ready(function() {
-        initializeSelect2();
-
-        // Get filter elements
-        const impactFilter = document.getElementById("impact-filter");
-        const tagFilter = document.getElementById("tag-filter");
-        const disabilityFilter = document.getElementById("disability-filter");
-
-        // Add Select2 change event listeners
-        if (impactFilter) {
-            $(impactFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
-        }
-        if (tagFilter) {
-            $(tagFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
-        }
-        if (disabilityFilter) {
-            $(disabilityFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
-        }
-
-        // Apply filters to the loaded content
-        applyFilters(impactFilter, tagFilter, disabilityFilter);
-    });
-}
+// function showReport(filePath) {
+//     window.location.href = `./pages/${filePath}.html`;
+//
+//     // Automatically activate the 'violations' tab on page load
+//     const violationsTab = document.querySelector('[data-tab="violations"]');
+//     violationsTab.click();
+//
+//     // Initialize Select2 after DOM is loaded
+//     $(document).ready(function() {
+//         initializeSelect2();
+//
+//         // Get filter elements
+//         const impactFilter = document.getElementById("impact-filter");
+//         const tagFilter = document.getElementById("tag-filter");
+//         const disabilityFilter = document.getElementById("disability-filter");
+//
+//         // Add Select2 change event listeners
+//         if (impactFilter) {
+//             $(impactFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+//         }
+//         if (tagFilter) {
+//             $(tagFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+//         }
+//         if (disabilityFilter) {
+//             $(disabilityFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
+//         }
+//
+//         // Apply filters to the loaded content
+//         applyFilters(impactFilter, tagFilter, disabilityFilter);
+//     });
+// }
 
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -472,4 +470,246 @@ $(document).ready(function() {
     if (disabilityFilter) {
         $(disabilityFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
     }
+    updateSelectAllCheckboxState();
 });
+
+// --- DASHBOARD TABLE SEARCH ---
+$(document).ready(function() {
+    const dashboardSearchInput = document.getElementById('dashboard-search-input');
+    const dashboardSearchButton = document.getElementById('dashboard-search-button');
+    const filterPriority = document.getElementById('filter-priority');
+
+    if (dashboardSearchInput) {
+        dashboardSearchInput.addEventListener('input', performSearch);
+    }
+
+    if (dashboardSearchButton) {
+        dashboardSearchButton.addEventListener('click', performSearch);
+    }
+
+    if (filterPriority) {
+        filterPriority.addEventListener('change', performSearch);
+    }
+});
+
+// Enhanced search and filter functionality
+function performSearch() {
+    const searchInput = document.getElementById('dashboard-search-input');
+    const filterSelect = document.getElementById('filter-priority');
+    const searchValue = (searchInput && searchInput.value) ? searchInput.value.toLowerCase() : '';
+    const filterValue = (filterSelect && filterSelect.value) ? filterSelect.value : 'all';
+    const rows = document.querySelectorAll('#sortable-table tbody tr');
+    const tableBody = document.getElementById('table-body');
+
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const pageLink = row.querySelector('.url-cell a');
+        const pageUrl = pageLink ? pageLink.textContent.toLowerCase() : '';
+        const matchesSearch = searchValue === '' || pageUrl.includes(searchValue);
+
+        let matchesFilter = true;
+        if (filterValue === 'critical') {
+            const criticalCell = row.querySelector('.status-cell.critical_elements');
+            const criticalCount = criticalCell ? parseInt(criticalCell.textContent) || 0 : 0;
+            matchesFilter = criticalCount > 0;
+        } else if (filterValue === 'serious') {
+            const seriousCell = row.querySelector('.status-cell.serious_elements');
+            const seriousCount = seriousCell ? parseInt(seriousCell.textContent) || 0 : 0;
+            matchesFilter = seriousCount > 0;
+        } else if (filterValue === 'moderate') {
+            const moderateCell = row.querySelector('.status-cell.moderate_elements');
+            const moderateCount = moderateCell ? parseInt(moderateCell.textContent) || 0 : 0;
+            matchesFilter = moderateCount > 0;
+        } else if (filterValue === 'minor') {
+            const minorCell = row.querySelector('.status-cell.minor_elements');
+            const minorCount = minorCell ? parseInt(minorCell.textContent) || 0 : 0;
+            matchesFilter = minorCount > 0;
+        } else if (filterValue === 'violation') {
+            const violationBadge = row.querySelector('.violation-badge.violations');
+            const violationCount = violationBadge ? parseInt(violationBadge.textContent) || 0 : 0;
+            matchesFilter = violationCount > 0;
+        } else if (filterValue === 'incomplete') {
+            const incompleteBadge = row.querySelector('.violation-badge.incomplete');
+            const incompleteCount = incompleteBadge ? parseInt(incompleteBadge.textContent) || 0 : 0;
+            matchesFilter = incompleteCount > 0;
+        }
+
+        if (matchesSearch && matchesFilter) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Show/hide no results message
+    let noResultsRow = tableBody.querySelector('.no-results-row');
+    if (visibleCount === 0) {
+        if (!noResultsRow) {
+            noResultsRow = document.createElement('tr');
+            noResultsRow.className = 'no-results-row';
+            noResultsRow.innerHTML = `
+                <td colspan="6" class="no-results-message">
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No pages found</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            ${searchValue ? `No pages match "${searchValue}"` : ''}
+                            ${filterValue !== 'all' ? `No pages have ${filterValue} issues` : ''}
+                            ${searchValue && filterValue !== 'all' ? ' with the current criteria' : ''}
+                        </p>
+                        <div>
+                            <button type="button" onclick="clearSearchAndFilters()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Clear filters
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(noResultsRow);
+        }
+        noResultsRow.style.display = '';
+        const paginationControls = document.getElementById('pagination-controls');
+        if (paginationControls) {
+            paginationControls.style.display = 'none';
+        }
+    } else {
+        if (noResultsRow) {
+            noResultsRow.style.display = 'none';
+            const paginationControls = document.getElementById('pagination-controls');
+            if (paginationControls) {
+                paginationControls.style.display = '';
+            }
+        }
+    }
+}
+
+// Function to clear search and filters
+function clearSearchAndFilters() {
+    const searchInput = document.getElementById('dashboard-search-input');
+    const filterSelect = document.getElementById('filter-priority');
+    
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    if (filterSelect) {
+        filterSelect.value = 'all';
+    }
+
+    const paginationControls = document.getElementById('pagination-controls');
+    if (paginationControls) {
+        paginationControls.style.display = '';
+    }
+
+    
+    performSearch();
+}
+
+// Enhanced table sorting functionality
+function sortTable(sortBy, direction) {
+    const tableBody = document.getElementById('table-body');
+    const rows = Array.from(tableBody.querySelectorAll('tr'));
+
+    const sortedRows = rows.sort((rowA, rowB) => {
+        let valueA, valueB;
+
+        switch (sortBy) {
+            case 'pagePath':
+                const linkA = rowA.querySelector('.url-cell a');
+                const linkB = rowB.querySelector('.url-cell a');
+                valueA = linkA ? linkA.textContent.toLowerCase() : '';
+                valueB = linkB ? linkB.textContent.toLowerCase() : '';
+                break;
+            case 'critical_elements':
+                const criticalA = rowA.querySelector('.status-cell.critical_elements');
+                const criticalB = rowB.querySelector('.status-cell.critical_elements');
+                valueA = criticalA ? parseInt(criticalA.textContent) || 0 : 0;
+                valueB = criticalB ? parseInt(criticalB.textContent) || 0 : 0;
+                break;
+            case 'serious_elements':
+                const seriousA = rowA.querySelector('.status-cell.serious_elements');
+                const seriousB = rowB.querySelector('.status-cell.serious_elements');
+                valueA = seriousA ? parseInt(seriousA.textContent) || 0 : 0;
+                valueB = seriousB ? parseInt(seriousB.textContent) || 0 : 0;
+                break;
+            case 'moderate_elements':
+                const moderateA = rowA.querySelector('.status-cell.moderate_elements');
+                const moderateB = rowB.querySelector('.status-cell.moderate_elements');
+                valueA = moderateA ? parseInt(moderateA.textContent) || 0 : 0;
+                valueB = moderateB ? parseInt(moderateB.textContent) || 0 : 0;
+                break;
+            case 'minor_elements':
+                const minorA = rowA.querySelector('.status-cell.minor_elements');
+                const minorB = rowB.querySelector('.status-cell.minor_elements');
+                valueA = minorA ? parseInt(minorA.textContent) || 0 : 0;
+                valueB = minorB ? parseInt(minorB.textContent) || 0 : 0;
+                break;
+            case 'violations':
+                const violationBadgeA = rowA.querySelector('.violation-badge.violations');
+                const violationBadgeB = rowB.querySelector('.violation-badge.violations');
+                valueA = violationBadgeA ? parseInt(violationBadgeA.textContent) || 0 : 0;
+                valueB = violationBadgeB ? parseInt(violationBadgeB.textContent) || 0 : 0;
+                break;
+            default:
+                return 0;
+        }
+
+        if (sortBy === 'pagePath') {
+            return direction === 'desc' ?
+                valueB.localeCompare(valueA) :
+                valueA.localeCompare(valueB);
+        } else {
+            return direction === 'desc' ? valueB - valueA : valueA - valueB;
+        }
+    });
+
+    // Remove all existing rows
+    while (tableBody.firstChild) {
+        tableBody.removeChild(tableBody.firstChild);
+    }
+
+    // Add sorted rows
+    sortedRows.forEach(row => {
+        tableBody.appendChild(row);
+    });
+}
+
+// Initialize table sorting
+$(document).ready(function() {
+    document.querySelectorAll('#sortable-table th[data-sort]').forEach(header => {
+        header.addEventListener('click', () => {
+            const sortBy = header.getAttribute('data-sort');
+            const isActive = header.classList.contains('active');
+            const sortIcon = header.querySelector('.sort-icon');
+            const currentDirection = (sortIcon && sortIcon.textContent === '↓') ? 'desc' : 'asc';
+            const newDirection = isActive && currentDirection === 'desc' ? 'asc' : 'desc';
+
+            // Remove active class and reset sort icons from all headers
+            document.querySelectorAll('#sortable-table th[data-sort]').forEach(h => {
+                h.classList.remove('active');
+                const icon = h.querySelector('.sort-icon');
+                if (icon) icon.textContent = '';
+            });
+
+            // Set active class and sort icon on current header
+            header.classList.add('active');
+            if (sortIcon) {
+                sortIcon.textContent = newDirection === 'desc' ? '↓' : '↑';
+            }
+
+            // Call sort function
+            sortTable(sortBy, newDirection);
+        });
+    });
+});
+
+function updateSelectAllCheckboxState() {
+    const noResults = document.querySelector('.no-results-message:not(.hidden)');
+    const selectAll = document.getElementById('select-all-checkbox');
+    if (selectAll) {
+        selectAll.disabled = !!noResults;
+    }
+}

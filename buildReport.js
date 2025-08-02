@@ -32,11 +32,14 @@ function readJSONFile(path) {
 
 function generateBaseDashboard(template) {
     return template.replace("{{CONTENT}}",
-        `
-         <body><header class="p-4">
-        <h1 class="text-2xl font-bold text-gray-800">Accessibility Report Dashboard</h1>
-        <p class="text-sm text-gray-500">Powered by axe-core and Playwright</p>
-    </header>
+        `<body>
+            <header>
+                <div class="container mx-auto flex justify-between">
+                    <h1 class="header-text text-2xl font-bold text-gray-800">Accessibility Report Dashboard</h1>
+                    <p class="text-sm text-gray-500">Powered by axe-core and Playwright</p>
+                </div>
+            </header>
+            
     <nav>
         <div id="breadcrumb-container" style="display:none;">
               <!--<ul class="breadcrumb">
@@ -48,7 +51,7 @@ function generateBaseDashboard(template) {
 
     <main>
         <h1 class="visually-hidden">Dashboard Overview</h1>
-        <div class="container">
+        <div class="container mx-auto">
             <!-- Dashboard View -->
             <div class="dashboard active" id="dashboard">
                 {{summary_cards}}
@@ -56,6 +59,7 @@ function generateBaseDashboard(template) {
                     {{impact_distribution_chart}}
                     {{disabilities_affected_chart}}
                 </div>
+                {{dashboard_search_bar}}
                 {{table_cards}}
             </div>
         </div>
@@ -68,11 +72,19 @@ function generateBaseContent(template, report) {
 
     return template.replace("{{CONTENT}}",
         `<body>
-     <header class="p-4">
+     <header>
+         <div class="container mx-auto flex justify-between">
         <h1 class="text-2xl font-bold text-gray-800">Accessibility Report Dashboard</h1>
-        <p class="text-sm text-gray-500">Powered by axe-core and Playwright</p>
+        <p class="text-sm text-gray-500">Powered by axe-core</p>
+        </div>
     </header>
-    <nav>
+   
+    
+   
+ <main>
+      <body class="text-gray-900">
+            <div class="container mx-auto">
+            <nav>
         <div id="breadcrumb-container">
             <ul class="breadcrumb">
                 <li><a href="../index.html" title="Dashboard">Dashboard</a></li>
@@ -80,27 +92,25 @@ function generateBaseContent(template, report) {
             </ul>
         </div>
     </nav>
-    
-   
- <main>
-      <body class="bg-white text-gray-900">
-            <div class="container mx-auto p-4 max-w-6xl">
                 <!-- Header and Breadcrumb -->
-                <div class="mb-6">
+                <div class="mb-2">
                    <div class="page-url flex justify-between items-center">
-                        <h1 class="text-2xl font-bold">Page:  ${report.pagePath !== undefined ? report.pagePath : report.url}</h1>
+                        <h1 class="text-3xl font-bold">Page:  ${report.pagePath !== undefined ? report.pagePath : report.url}</h1>
                         <div class="flex items-center">
                         <a href="${report.url}" target="_blank" class="text-blue-600 hover:text-blue-800">
                             <button class="border border-blue-600 text-blue-600 px-4 py-2 rounded hover:bg-blue-100">
                               View in Browser
                             </button>
                         </a>
-                        <button id="generateBugReportBtn" class="ml-2 text-white px-4 py-2 rounded bg-gray-300 cursor-not-allowed" disabled="">
-                          Generate Bug Report
-                        </button>
+<button id="generateBugReportBtn" 
+        class="ml-2 text-white px-4 py-2 rounded bg-gray-300 cursor-not-allowed" 
+        disabled=""
+        title="Generates a preformatted title and summary based on this issue, ready to paste into Jira or other tracking tools.">
+  Generate Bug Summary
+</button>
                     </div>
                    </div>
-                    <div class="text-sm text-gray-500 mt-2">
+                    <div class="text-sm text-gray-500">
     <div>Browser: ${userAgent || 'N/A'}, Viewport: ${windowWidth || 0}×${windowHeight || 0}</div>
 </div>
                 </div>
@@ -117,7 +127,7 @@ function generateBaseContent(template, report) {
      <div id="bugReportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
          <!-- Modal Content -->
          <div class="bg-white rounded-lg p-6 max-w-2xl w-full shadow-lg">
-             <h2 class="text-xl font-bold mb-4">Bug Report</h2>
+             <h2 class="text-xl font-bold mb-4">Bug Summary</h2>
 
            <div class="flex items-center mb-2">
             <strong>Title:</strong>
@@ -306,7 +316,8 @@ function generateBaseContent(template, report) {
             if (tagFilter) tagFilter.addEventListener("change", () => applyFilters(impactFilter, tagFilter, disabilityFilter));
             if (disabilityFilter) disabilityFilter.addEventListener("change", () => applyFilters(impactFilter, tagFilter, disabilityFilter));
     
-            applyFilters(impactFilter, tagFilter, disabilityFilter);
+            
+            
             
         });
         
@@ -366,16 +377,18 @@ function generateFilters(report, affected) {
             }
         }
     });
-
+    // const sortedImpacts = ['Critical 🟥', 'Serious 🟧', 'Moderate 🟨', 'Minor 🟩'].filter(i => impactValues.has(i));
     // Convert to arrays and sort
-    const sortedImpacts = [...impactValues].sort();
-    const sortedTags = [...tagValues].sort();
-    const sortedDisabilities = [...disabilityValues].sort();
+    const sortedImpacts = ['critical', 'serious', 'moderate', 'minor'].filter(i => impactValues.has(i));
+    const sortedTags = [...tagValues];
+    const sortedDisabilities = [...disabilityValues];
 
     // Generate options HTML
     const impactOptions = sortedImpacts.map(impact =>
         `<option value="${impact}">${impact.charAt(0).toUpperCase() + impact.slice(1)}</option>`
     ).join('');
+
+    console.log(impactOptions)
 
     const tagOptions = sortedTags.map(tag =>
         `<option value="${tag}">${tag}</option>`
@@ -387,10 +400,10 @@ function generateFilters(report, affected) {
 
 
     return `
-        <div class="mb-6 flex flex-wrap gap-4">
+        <div class="mb-3 flex flex-wrap gap-4">
             <!-- Impact Filter -->
             <div class="flex-1 min-w-[200px]">
-                <label for="impact-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Impact</label>
+                <label for="impact-filter" class="block font-medium text-gray-700 mb-1">Filter by Impact</label>
                 <select id="impact-filter" class="select2-filter w-full" multiple="multiple" data-placeholder="Select impacts...">
                     ${impactOptions}
                 </select>
@@ -398,7 +411,7 @@ function generateFilters(report, affected) {
 
             <!-- Standards/Tags Filter -->
             <div class="flex-1 min-w-[200px]">
-                <label for="tag-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Standard</label>
+                <label for="tag-filter" class="block font-medium text-gray-700 mb-1">Filter by Standard</label>
                 <select id="tag-filter" class="select2-filter w-full" multiple="multiple" data-placeholder="Select standards...">
                     ${tagOptions}
                 </select>
@@ -406,7 +419,7 @@ function generateFilters(report, affected) {
 
             <!-- Disabilities Filter -->
             <div class="flex-1 min-w-[200px]">
-                <label for="disability-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Disability</label>
+                <label for="disability-filter" class="block font-medium text-gray-700 mb-1">Filter by Disability</label>
                 <select id="disability-filter" class="select2-filter w-full" multiple="multiple" data-placeholder="Select disabilities...">
                     ${disabilityOptions}
                 </select>
@@ -415,47 +428,29 @@ function generateFilters(report, affected) {
     `;
 }
 
-function generateSearchBar() {
-    return `
-        <div class="mb-6 relative">
-            <div class="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-3 top-3 h-4 w-4 text-gray-500" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.3-4.3"/>
-                </svg>
-                <input
-                    id="search-input"
-                    type="text"
-                    placeholder="Search by description or accessibility ID"
-                    class="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-        </div>
-    `;
-}
-
 function generateTabs(report) {
-    const tabs = [{
+    const tabs = [
+        {
             id: 'violations',
             name: 'Violations',
             count: report.violations.length || 0,
-            color: 'text-red-600',
-            borderColor: 'border-red-500'
+            hoverClass: 'hover:text-red-600',
+            activeClass: '[&.active]:text-red-600 [&.active]:border-b-red-500'
         },
         {
             id: 'incomplete',
             name: 'Incomplete',
             count: report.incomplete.length || 0,
-            color: 'text-blue-600',
-            borderColor: 'border-blue-500'
+            hoverClass: 'hover:text-yellow-800',
+            activeClass: '[&.active]:text-yellow-800 [&.active]:border-b-yellow-800'
         },
         {
             id: 'passes',
             name: 'Passes',
             count: report.passes.length || 0,
-            color: 'text-green-500',
-            borderColor: 'border-green-500'
-        },
+            hoverClass: 'hover:text-green-500',
+            activeClass: '[&.active]:text-green-500 [&.active]:border-b-green-500'
+        }
     ];
 
     let tabContent = '';
@@ -479,12 +474,13 @@ function generateTabs(report) {
         }
 
         tabContent += `
-            <button data-tab="${tab.id}" class="flex items-center justify-center py-2 border-b-2 hover:bg-gray-100 text-gray-500 hover:${tab.color} [&.active]:${tab.color} [&.active]:border-b-${tab.borderColor}">
-                ${svgContent}
-                <span class="ml-2">${tab.name}</span>
-                <span class="issue-count ml-2 bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-sm">${tab.count}</span>
-            </button>
-        `;
+  <button data-tab="${tab.id}"
+    class="flex items-center justify-center py-2 border-b-2 hover:bg-gray-100 text-gray-500 ${tab.hoverClass} ${tab.activeClass}">
+    ${svgContent}
+    <span class="ml-2">${tab.name}</span>
+    <span class="issue-count ml-2 bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-sm">${tab.count}</span>
+  </button>
+`;
     });
 
     return `
@@ -542,10 +538,11 @@ function generateIssueCards(issues, affected, screenshot) {
                                 <input type="checkbox" id="issue-${issue.id}" class="issue-checkbox w-4 h-4" onclick="event.stopPropagation();">
                             </div>
                         <div class="flex justify-between items-center mb-4 w-full block cursor-pointer relative" onclick="toggleIssueCard(this)">
-                            <div>
-                                <div class="flex items-center gap-2 mt-2 mb-3">
-                                  <span class="${issue.impact === 'critical' ? 'bg-red-600' : issue.impact === 'serious' ? 'bg-orange-500' : issue.impact === 'moderate' ? 'bg-yellow-500' : 'bg-green-500'} text-white issue-impact px-2 py-0.5 rounded text-sm">${issue.impact || 'none'}</span>
+                            <div class="w-full">
+                                <div class="relative gap-2 flex items-center mt-2 mb-3 h-6">
+                                  <span class="${issue.impact === 'critical' ? 'bg-red-600' : issue.impact === 'serious' ? 'bg-orange-600' : issue.impact === 'moderate' ? 'bg-yellow-600' : 'bg-green-600'} text-white issue-impact px-2 py-0.5 rounded text-sm">${issue.impact || 'minor'}</span>
                                     <h2 class="text-base issue-id font-semibold">${issue.id}</h2>
+                                    <span class="absolute left-[400px] bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-s font-medium">${issue.nodes.length} ${issue.nodes.length === 1 ? 'element' : 'elements'}</span>
                                 </div>
 
                                 <div class="issue_description" class="mb-2">
@@ -676,53 +673,72 @@ function readAllJsonAndPutIntoArray() {
 }
 
 function generateSummaryCart(reports) {
-    const violationsTotalCount = reports.reduce((sum, report) => {
+    const violationsRulesTotalCount = reports.reduce((sum, report) => {
         return sum + (report.violations ? report.violations.length : 0);
     }, 0);
-    const incompleteTotalCount = reports.reduce((sum, report) => {
+    const violationElementsTotalCount = reports.reduce((sum, report) => {
+        return sum + (report.violations ? report.violations.reduce((acc, violation) => acc + (violation.nodes ? violation.nodes.length : 0), 0) : 0);
+    }, 0);
+
+    const incompleteRulesTotalCount = reports.reduce((sum, report) => {
         return sum + (report.incomplete ? report.incomplete.length : 0);
     }, 0);
-    const passesTotalCount = reports.reduce((sum, report) => {
+
+    const incompleteElementsTotalCount = reports.reduce((sum, report) => {
+        return sum + (report.incomplete ? report.incomplete.reduce((acc, incomplete) => acc + (incomplete.nodes ? incomplete.nodes.length : 0), 0) : 0);
+    }, 0);
+
+    const passesRulesTotalCount = reports.reduce((sum, report) => {
         return sum + (report.passes ? report.passes.length : 0);
     }, 0);
-    const totalReports = violationsTotalCount + incompleteTotalCount + passesTotalCount;
+
+    const passesElementsTotalCount = reports.reduce((sum, report) => {
+        return sum + (report.passes ? report.passes.reduce((acc, pass) => acc + (pass.nodes ? pass.nodes.length : 0), 0) : 0);
+    }, 0);
+
+    const totalRulesReports = violationsRulesTotalCount + incompleteRulesTotalCount + passesRulesTotalCount;
+    const totalElementsReports = violationElementsTotalCount + incompleteElementsTotalCount + passesElementsTotalCount;
 
     return `
     <div class="icon-cards">
              <div class="icon-card">
     <div class="card-icon icon-total">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V6"></path><path d="m5 12 7-7 7 7"></path></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V6"></path><path d="m5 12 7-7 7 7"></path></svg>
     </div>
     <div class="icon-content">
-      <h3 class="icon-title">Total Reports</h3>
-      <p class="icon-value">${totalReports}</p>
+      <h2 class="icon-title">Total Reports</h2>
+      <p class="icon-value">${totalElementsReports} Elements</p>
+       <p class="rule-value">Across <strong>${totalRulesReports} Rules</strong></p>
     </div>
   </div>
            <div class="icon-card">
     <div class="card-icon icon-violations">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
     </div>
     <div class="icon-content">
-      <h3 class="icon-title">Violations</h3>
-      <p class="icon-value" style="color: #e74c3c;">${violationsTotalCount}</p>
+      <h2 class="icon-title" style="color: #c0392b;">Violations</h2>
+      <p class="icon-value" >${violationElementsTotalCount} Elements</p>
+        <p class="rule-value">Across <strong>${violationsRulesTotalCount} Rules</strong></p>
     </div>
   </div>
             <div class="icon-card">
     <div class="card-icon icon-incomplete">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
     </div>
     <div class="icon-content">
-      <h3 class="icon-title">Incomplete</h3>
-      <p class="icon-value" style="color: #f39c12;">${incompleteTotalCount}</p>
+     <h2 class="icon-title" style="color: #8a4b00;">Incomplete</h2>
+      <p class="icon-value" >${incompleteElementsTotalCount} Elements</p>
+        <p class="rule-value">Across <strong>${incompleteRulesTotalCount} Rules</strong></p>
     </div>
   </div>
             <div class="icon-card">
     <div class="card-icon icon-passes">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
     </div>
     <div class="icon-content">
-      <h3 class="icon-title">Passes</h3>
-      <p class="icon-value" style="color: #219653;">${passesTotalCount}</p>
+     <h2 class="icon-title"  style="color: #17632a;">Passes</h2>
+      <p class="icon-value">${passesElementsTotalCount} Elements</p>
+        <p class="rule-value">Across <strong>${passesRulesTotalCount} Rules</strong></p>
     </div>
   </div>
         </div>
@@ -733,21 +749,41 @@ function generateTableCards(reports) {
     // Add sorting state and logic
     const columns = [
         { key: 'page', label: 'Page' },
-        { key: 'violations', label: 'Violations' },
-        { key: 'incomplete', label: 'Incomplete' },
-        { key: 'passes', label: 'Passes' },
-        { key: 'inapplicable', label: 'Inapplicable' },
+        {key: "critical_elements", label: "Critical Elements"},
+        {key: "serious_elements", label: "Serious Elements"},
+        { key: 'moderate_elements', label: 'Moderate Elements' },
+        { key: 'minor_elements', label: 'Minor Elements' },
+        { key: 'violations', label: 'Violations Rules' },
+        { key: 'incomplete', label: 'Incomplete Rules' },
+        { key: 'passes', label: 'Passes Rules' },
+        { key: 'inapplicable', label: 'Inapplicable Rules' },
         { key: 'impacts', label: 'Impacts' }
     ];
     // Prepare data for sorting
     let tableData = reports.map(report => {
-        const standard = report.standard || 'N/A';
+        //const standard = report.standard || 'N/A';
+        const critical_elements = [...report.violations, ...report.incomplete]
+            .map(v => v.nodes.filter(node => node.impact === 'critical').length)
+            .reduce((sum, count) => sum + count, 0);
+
+        const serious_elements = [...report.violations, ...report.incomplete]
+            .map(v => v.nodes.filter(node => node.impact === 'serious').length)
+            .reduce((sum, count) => sum + count, 0);
+
+        const moderate_elements = [...report.violations, ...report.incomplete]
+            .map(v => v.nodes.filter(node => node.impact === 'moderate').length)
+            .reduce((sum, count) => sum + count, 0);
+
+        const minor_elements = [...report.violations, ...report.incomplete]
+            .map(v => v.nodes.filter(node => node.impact === 'minor').length)
+            .reduce((sum, count) => sum + count, 0);
+
         const violations = report.violations ? report.violations.length : 0;
         const incomplete = report.incomplete ? report.incomplete.length : 0;
         const passes = report.passes ? report.passes.length : 0;
         const inapplicable = report.inapplicable ? report.inapplicable.length : 0;
         let critical = 0, serious = 0, moderate = 0, none = 0;
-        ['violations', 'incomplete', 'passes'].forEach(section => {
+        ['violations', 'incomplete'].forEach(section => {
             if (report[section]) {
                 report[section].forEach(issue => {
                     if (issue.impact === 'critical') critical++;
@@ -760,6 +796,10 @@ function generateTableCards(reports) {
         return {
             id: report.id,
             pagePath: report.pagePath || report.id,
+            critical_elements,
+            serious_elements,
+            moderate_elements,
+            minor_elements,
             violations,
             incomplete,
             passes,
@@ -768,8 +808,8 @@ function generateTableCards(reports) {
             serious,
             moderate,
             none,
-            impactsSortKey: [critical, serious, moderate, none],
-            standard
+            impactsSortKey: [critical_elements, serious_elements, moderate_elements, minor_elements, critical, serious, moderate, none],
+            //standard
         };
     });
 
@@ -794,11 +834,17 @@ function generateTableCards(reports) {
     let tableHeader = `
         <tr>
             <th class="border-col" data-sort="pagePath">Page ${getSortIcon('pagePath')}</th>
-            <th class="center-cell" data-sort="violations">Violations ${getSortIcon('violations')}</th>
-            <th class="center-cell" data-sort="incomplete">Incomplete ${getSortIcon('incomplete')}</th>
-            <th class="center-cell" data-sort="passes">Passes ${getSortIcon('passes')}</th>
-            <th class="center-cell border-col" data-sort="inapplicable">${getInapplicableHeader()}</th>
-            <th class="center-cell" data-sort="impacts">Impacts ${getSortIcon('impacts')}</th>
+            <th class="center-cell" data-sort="critical_elements">Critical ${getSortIcon('critical_elements')}</th>
+            <th class="center-cell" data-sort="serious_elements">Serious ${getSortIcon('serious_elements')}</th>
+            <th class="center-cell" data-sort="moderate_elements">Moderate ${getSortIcon('moderate_elements')}</th>
+            <th class="center-cell" data-sort="minor_elements">Minor ${getSortIcon('minor_elements')}</th>
+            <th class="center-cell" data-sort="violations">
+                Rules Status
+                <div class="tooltip-container">
+                    <span class="tooltip-icon">ⓘ</span>
+                </div>
+                ${getSortIcon('violations')}
+            </th>
         </tr>
     `;
 
@@ -827,15 +873,15 @@ function generateTableCards(reports) {
         return tableData.map(row => `
             <tr>
                 <td class="url-cell border-col"><a href="./pages/${row.id}.html">${row.pagePath}</a></td>
-                <td class="status-cell violations center-cell">${row.violations}</td>
-                <td class="status-cell incomplete center-cell">${row.incomplete}</td>
-                <td class="status-cell passes center-cell">${row.passes}</td>
-                <td class="status-cell inapplicable center-cell border-col">${row.inapplicable}</td>
+                <td class="status-cell critical_elements center-cell">${row.critical_elements}</td>
+                <td class="status-cell serious_elements center-cell">${row.serious_elements}</td>
+                <td class="status-cell moderate_elements center-cell">${row.moderate_elements}</td>
+                <td class="status-cell minor_elements center-cell">${row.minor_elements}</td>
+              
                 <td class="center-cell">
-                    <span class='bg-red-600 text-white px-2 py-0.5 rounded'>C:${row.critical}</span> 
-                    <span class='bg-orange-600 text-white px-2 py-0.5 rounded'>S:${row.serious}</span> 
-                    <span class='bg-yellow-600 text-white px-2 py-0.5 rounded'>M:${row.moderate}</span> 
-                    <span class='bg-gray-400 text-white px-2 py-0.5 rounded'>N:${row.none}</span> 
+                    <span class='violation-badge violations'>${row.violations} Violations</span> 
+                    <span class='violation-badge incomplete'>${row.incomplete} Incomplete</span> 
+                    <span class='violation-badge passes'>${row.passes} Passes</span> 
                 </td>
             </tr>
         `).join('');
@@ -843,12 +889,14 @@ function generateTableCards(reports) {
 
     // Table with header and rows
     const tableHtml = `
-        <table id="sortable-table">
-            <thead>${tableHeader}</thead>
-            <tbody id="table-body">
-                ${renderTableRows()}
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table id="sortable-table">
+                <thead>${tableHeader}</thead>
+                <tbody id="table-body">
+                    ${renderTableRows()}
+                </tbody>
+            </table>
+        </div>
         <div id="pagination-controls"></div>
         <script>
         (function() {
@@ -856,30 +904,12 @@ function generateTableCards(reports) {
             let sortDir = '${sortDir}';
             const tableData = ${JSON.stringify(tableData)};
             function getSortIcon(col) {
-    if (sortKey !== col) return '<span class="sort-icon" style="display:inline-block;width:1em;">&nbsp;</span>';
-    if (col === 'impacts') {
-        // For impacts, reverse the icon logic
-        return sortDir === 'asc' ? '<span class="sort-icon" style="display:inline-block;width:1em;">↓</span>' : '<span class="sort-icon" style="display:inline-block;width:1em;">↑</span>';
-    }
-    return sortDir === 'asc' ? '<span class="sort-icon" style="display:inline-block;width:1em;">↑</span>' : '<span class="sort-icon" style="display:inline-block;width:1em;">↓</span>';
-}
-            function getInapplicableHeader() {
-                return 'Inapplicable ' + getSortIcon('inapplicable') +
-                    '<span class="inapplicable-tooltip-wrapper" style="position: relative;">' +
-                        '<span style="border-bottom:1px dotted #000; cursor:pointer;">&#9432;</span>' +
-                        '<span class="tooltip-text">Rules that didn’t apply because the page had no relevant elements to test</span>' +
-                    '</span>';
+                if (sortKey !== col) return '<span class="sort-icon" style="display:inline-block;width:1em;">&nbsp;</span>';
+                return sortDir === 'asc' ? '<span class="sort-icon" style="display:inline-block;width:1em;">↑</span>' : '<span class="sort-icon" style="display:inline-block;width:1em;">↓</span>';
             }
             function sortTableData() {
                 tableData.sort(function(a, b) {
-                    if (sortKey === 'impacts') {
-                        for (let i = 0; i < 4; i++) {
-                            if (a.impactsSortKey[i] !== b.impactsSortKey[i]) {
-                                return (sortDir === 'asc' ? 1 : -1) * (b.impactsSortKey[i] - a.impactsSortKey[i]);
-                            }
-                        }
-                        return 0;
-                    } else if (sortKey === 'pagePath') {
+                    if (sortKey === 'pagePath') {
                         return (sortDir === 'asc' ? 1 : -1) * a.pagePath.localeCompare(b.pagePath);
                     } else if (typeof a[sortKey] === 'string') {
                         return (sortDir === 'asc' ? 1 : -1) * a[sortKey].localeCompare(b[sortKey]);
@@ -892,16 +922,15 @@ function generateTableCards(reports) {
                 return tableData.map(function(row) {
                     return '<tr>' +
                         '<td class="url-cell border-col"><a href="./pages/' + row.id + '.html">' + row.pagePath + '</a></td>' +
-                        '<td class="status-cell violations center-cell">' + row.violations + '</td>' +
-                        '<td class="status-cell incomplete center-cell">' + row.incomplete + '</td>' +
-                        '<td class="status-cell passes center-cell">' + row.passes + '</td>' +
-                        '<td class="status-cell inapplicable center-cell border-col">' + row.inapplicable + '</td>' +
+                        '<td class="status-cell critical_elements center-cell">' + row.critical_elements + '</td>' +
+                        '<td class="status-cell serious_elements center-cell">' + row.serious_elements + '</td>' +
+                        '<td class="status-cell moderate_elements center-cell">' + row.moderate_elements + '</td>' +
+                        '<td class="status-cell minor_elements center-cell">' + row.minor_elements + '</td>' +
                         '<td class="center-cell">' +
-    "<span class='bg-red-600 text-white px-2 py-0.5 rounded'>C:" + row.critical + "</span> " +
-    "<span class='bg-orange-600 text-white px-2 py-0.5 rounded'>S:" + row.serious + "</span> " +
-    "<span class='bg-yellow-600 text-white px-2 py-0.5 rounded'>M:" + row.moderate + "</span> " +
-    "<span class='bg-gray-400 text-white px-2 py-0.5 rounded'>N:" + row.none + "</span>" +
-'</td>' +
+                            '<span class="violation-badge violations">' + row.violations + ' Violations</span> ' +
+                            '<span class="violation-badge incomplete">' + row.incomplete + ' Incomplete</span> ' +
+                            '<span class="violation-badge passes">' + row.passes + ' Passes</span>' +
+                        '</td>' +
                     '</tr>';
                 }).join('');
             }
@@ -911,11 +940,8 @@ function generateTableCards(reports) {
                 // Update sort icons
                 document.querySelectorAll('#sortable-table th[data-sort]').forEach(function(th) {
                     const col = th.getAttribute('data-sort');
-                    if (col === 'inapplicable') {
-                        th.innerHTML = getInapplicableHeader();
-                    } else {
-                        th.innerHTML = th.textContent.replace(/[⇅↑↓]/g, '') + (col === sortKey ? ' ' + getSortIcon(col) : '');
-                    }
+                    const textContent = th.textContent.replace(/[⇅↑↓]/g, '').trim();
+                    th.innerHTML = textContent + (col === sortKey ? ' ' + getSortIcon(col) : '');
                 });
             }
             document.querySelectorAll('#sortable-table th[data-sort]').forEach(function(th) {
@@ -940,8 +966,13 @@ function generateTableCards(reports) {
 function generateImpactDistribution(reports) {
     const countImpacts = (reports, impact) => {
         return reports.reduce((count, report) => {
-            ['violations', 'incomplete', 'passes'].forEach(section => {
-                count += report[section]?.filter(v => v.impact === impact).length || 0;
+            ['violations', 'incomplete'].forEach(section => {
+                if (report[section]?.filter(v => v.impact === impact).length > 0) {
+                    report[section]?.filter(v => v.impact === impact).forEach(item => {
+                        count += item.nodes.length;
+                    });
+                }
+                //count += report[section]?.filter(v => v.impact === impact)?.nodes.length || 0;
             });
             return count;
         }, 0);
@@ -951,7 +982,7 @@ function generateImpactDistribution(reports) {
     const totalCritical = countImpacts(reports, "critical");
     const totalSerious = countImpacts(reports, "serious");
     const totalModerate = countImpacts(reports, "moderate");
-    const totalNone = countImpacts(reports, null);
+    const totalMinor = countImpacts(reports, "minor");
 
     return `
                 <div class="chart">
@@ -964,10 +995,10 @@ function generateImpactDistribution(reports) {
         new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Critical', 'Serious', 'Moderate', 'No Impact'],
+                labels: ['Critical', 'Serious', 'Moderate', 'Minor'],
                 datasets: [{
-                    data: [${totalCritical}, ${totalSerious}, ${totalModerate}, ${totalNone}], 
-                    backgroundColor: ['#ed5959', '#f3826b', '#ffdd76', '#d3dde0'], 
+                    data: [${totalCritical}, ${totalSerious}, ${totalModerate}, ${totalMinor}], 
+                   backgroundColor: ['#ef4444', '#f97316', '#facc15', '#22c55e'],
                     borderWidth: 2
                 }]
             },
@@ -982,7 +1013,7 @@ function generateImpactDistribution(reports) {
                             boxWidth: 20,
                             padding: 15,
                              font: {
-                                size: 14 // Increase this value to make the text larger
+                                size: 14
                             }  
                         }
                     }
@@ -1055,6 +1086,33 @@ function generateDisabilityAffected(reports, affected) {
     `
 }
 
+function generateDashboardSearchBar() {
+    return `
+<div class="search-and-filters">
+        <div class="search-box">
+            <input type="text" id="dashboard-search-input" placeholder="Search pages..." class="search-input">
+            <button id="dashboard-search-button" class="search-button" aria-label="Search">
+    <span class="visually-hidden">Search</span>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
+    </svg>
+</button>
+        </div>
+        <div class="filters">
+            <select id="filter-priority" aria-label="Filter pages by priority">
+                <option value="all">All Pages</option>
+                <option value="critical">Pages with Critical Issues</option>
+                <option value="serious">Pages with Serious Issues</option>
+                <option value="moderate">Pages with Moderate Issues</option>
+                <option value="minor">Pages with Minor Issues</option>
+                <option value="violation">Pages with Violation Rules</option>
+                <option value="incomplete">Pages with Incomplete Rules</option>
+            </select>
+        </div>
+    </div>
+    `;
+}
+
 // Main function to generate the report
 function generateReport() {
     const template = fs.readFileSync(path.join(__dirname, './index.template.html'), 'utf8');
@@ -1063,14 +1121,14 @@ function generateReport() {
 
     reports.forEach(report => {
         let baseContent = generateBaseContent(template, report);
-        let searchBar = generateSearchBar();
+        //let searchBar = generateSearchBar();
         let tabs = generateTabs(report);
         let violationsIssueCards = generateIssueCards(report.violations, affected, report.id + "_violations.png");
         let incompleteIssueCards = generateIssueCards(report.incomplete, affected, report.id + "_incomplete.png");
         let passedIssueCards = generateIssueCards(report.passes, affected);
 
         baseContent = baseContent.replace("{{FILTERS}}", generateFilters(report, affected));
-        baseContent = baseContent.replace("{{SEARCH_BAR}}", searchBar);
+        //baseContent = baseContent.replace("{{SEARCH_BAR}}", searchBar);
         baseContent = baseContent.replace("{{TABS}}", tabs);
         baseContent = baseContent.replace("{{FILTERS}}", '');
         baseContent = baseContent.replace("{{ISSUE_CARDS}}", combineIssueCards([violationsIssueCards, incompleteIssueCards, passedIssueCards]));
@@ -1088,9 +1146,9 @@ function generateDashboard() {
     const reports = readAllJsonAndPutIntoArray();
     const affected = readJSONFile(__dirname + "/disabilityAffectedData/" + getAxeVersion(reports[0].testEngine.version) + ".json");
 
-
     let dashboardBody = generateBaseDashboard(template);
     const summaryCards = generateSummaryCart(reports);
+    const dashboardSearchBar = generateDashboardSearchBar();
     const tableCards = generateTableCards(reports);
     const impactDistributionChart = generateImpactDistribution(reports);
     const disabilityAffected = generateDisabilityAffected(reports, affected);
@@ -1098,6 +1156,7 @@ function generateDashboard() {
     dashboardBody = dashboardBody.replace('{{summary_cards}}', summaryCards);
     dashboardBody = dashboardBody.replace('{{impact_distribution_chart}}', impactDistributionChart);
     dashboardBody = dashboardBody.replace('{{disabilities_affected_chart}}', disabilityAffected);
+    dashboardBody = dashboardBody.replace('{{dashboard_search_bar}}', dashboardSearchBar);
     dashboardBody = dashboardBody.replace('{{table_cards}}', tableCards);
 
     fs.writeFileSync(outputPath, dashboardBody, 'utf8');
