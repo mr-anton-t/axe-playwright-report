@@ -1127,7 +1127,6 @@ div.mb-6>.grid-cols-4 {
 
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
     display: inline-flex;
-    align-items: center;
     justify-content: center;
     color: white;
     font-weight: bold;

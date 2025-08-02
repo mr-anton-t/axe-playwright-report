@@ -103,7 +103,7 @@ function generateBaseContent(template, report) {
                             </button>
                         </a>
 <button id="generateBugReportBtn" 
-        class="ml-2 text-white px-4 py-2 rounded bg-gray-300 cursor-not-allowed" 
+        class="ml-2 text-white px-4 py-2 rounded bg-gray-300 cursor-not-allowed relative" 
         disabled=""
         title="Generates a preformatted title and summary based on this issue, ready to paste into Jira or other tracking tools.">
   Generate Bug Summary
@@ -166,17 +166,6 @@ function generateBaseContent(template, report) {
         const modal = document.getElementById('bugReportModal');
         const closeBtn = document.getElementById('closeBugModal');
   
-        document.getElementById('select-all-checkbox').addEventListener('change', function () {
-        const checked = this.checked;
-        document.querySelectorAll('input[type="checkbox"][id^="issue-"]:not([style*="display: none"])').forEach(cb => {
-            // Only select checkboxes that are visible
-            if (cb.offsetParent !== null) {
-                cb.checked = checked;
-            }
-        });
-    });
-            
-        
         document.addEventListener('change', function () {
             const anyChecked = document.querySelectorAll('input[type="checkbox"]:checked').length > 0;
 
@@ -388,8 +377,6 @@ function generateFilters(report, affected) {
         `<option value="${impact}">${impact.charAt(0).toUpperCase() + impact.slice(1)}</option>`
     ).join('');
 
-    console.log(impactOptions)
-
     const tagOptions = sortedTags.map(tag =>
         `<option value="${tag}">${tag}</option>`
     ).join('');
@@ -429,8 +416,7 @@ function generateFilters(report, affected) {
 }
 
 function generateTabs(report) {
-    const tabs = [
-        {
+    const tabs = [{
             id: 'violations',
             name: 'Violations',
             count: report.violations.length || 0,
@@ -472,23 +458,24 @@ function generateTabs(report) {
                     <path d="M20 6L9 17l-5-5"></path>
                 </svg>`;
         }
-
+        const tabName = tab.id;
+       const selectAllCheckbox = (tabName === 'violations' || tabName === 'incomplete')
+    ? `<label for="select-all-checkbox-${tabName}" class="sr-only">Select all ${tabName}</label>
+       <input type="checkbox" id="select-all-checkbox-${tabName}" class="absolute left-5 w-4 h-4 mr-2" aria-label="Select all ${tabName}">`
+    : '';
         tabContent += `
-  <button data-tab="${tab.id}"
-    class="flex items-center justify-center py-2 border-b-2 hover:bg-gray-100 text-gray-500 ${tab.hoverClass} ${tab.activeClass}">
-    ${svgContent}
+<div data-tab="${tab.id}" class="relative flex items-center justify-center py-2 border-b-2 hover:bg-gray-100 text-gray-500 ${tab.hoverClass} ${tab.activeClass}">
+${selectAllCheckbox}
+  <button ${svgContent}
     <span class="ml-2">${tab.name}</span>
     <span class="issue-count ml-2 bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-sm">${tab.count}</span>
-  </button>
+  </button></div>
 `;
     });
 
     return `
         <div class="mb-6">
-            <div class="grid grid-cols-[auto_1fr_1fr_1fr] gap-2 border-b">
-            <label class="flex items-center justify-center cursor-pointer select-none mr-3 ml-5">
-                    <input type="checkbox" id="select-all-checkbox" class="w-4 h-4">
-            </label>
+            <div class="grid grid-cols-[1fr_1fr_1fr] gap-2 border-b">
                 ${tabContent}
             </div>
         </div>
@@ -535,7 +522,8 @@ function generateIssueCards(issues, affected, screenshot) {
                     <div class="py-2 px-4">
                         <div class="flex items-center gap-5 w-full cursor-pointer relative" onclick="toggleIssueCard(this)">
                         <div class="flex items-center pl-1">
-                                <input type="checkbox" id="issue-${issue.id}" class="issue-checkbox w-4 h-4" onclick="event.stopPropagation();">
+                                <label for="issue-${issue.id}" class="sr-only">Select issue ${issue.id}</label>
+<input type="checkbox" id="issue-${issue.id}" class="issue-checkbox w-4 h-4" onclick="event.stopPropagation();">
                             </div>
                         <div class="flex justify-between items-center mb-4 w-full block cursor-pointer relative" onclick="toggleIssueCard(this)">
                             <div class="w-full">
@@ -1113,6 +1101,32 @@ function generateDashboardSearchBar() {
     `;
 }
 
+// Add this new function to update the bug report button badge
+function updateBugReportButtonBadge() {
+    const bugBtn = document.getElementById('generateBugReportBtn');
+    if (!bugBtn) return;
+    
+    const selectedCheckboxes = document.querySelectorAll('.issue-checkbox:checked');
+    const count = selectedCheckboxes.length;
+    
+    // Remove existing badge if any
+    const existingBadge = bugBtn.querySelector('.badge-count');
+    if (existingBadge) {
+        existingBadge.remove();
+    }
+    
+    // Add new badge if there are selected items
+    if (count > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'badge-count absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold';
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.fontSize = '10px';
+        badge.style.minWidth = '20px';
+        badge.style.height = '20px';
+        bugBtn.appendChild(badge);
+    }
+}
+
 // Main function to generate the report
 function generateReport() {
     const template = fs.readFileSync(path.join(__dirname, './index.template.html'), 'utf8');
@@ -1161,7 +1175,7 @@ function generateDashboard() {
 
     fs.writeFileSync(outputPath, dashboardBody, 'utf8');
 
-    console.log(`Report successfully generated to ${path.join(process.cwd(), BASE_DIR)}`);
+    console.log(`Report successfully generated to ${path.join(process.cwd(), BASE_DIR)}` + 'index.html');
 }
 
 function deduplicate(strategy) {
@@ -1181,8 +1195,6 @@ function deduplicate(strategy) {
             raw
         };
     });
-
-    console.log("[!] Reports merging strategy: ", strategy.toUpperCase());
 
     if (strategy === 'none') {
         return;

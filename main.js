@@ -86,6 +86,12 @@ function setupTabs() {
             } else {
                 console.error('No content found for tab:', tabValue);
             }
+
+            // Update select-all checkbox states after tab switch
+            updateSelectAllCheckboxStates();
+
+            // Update the badge count after tab switch
+            updateBugReportButtonBadge();
         });
     });
 }
@@ -289,7 +295,12 @@ function applyFilters(impactFilter, tagFilter, disabilityFilter) {
             }
         }
     });
-    //updateSelectAllCheckboxState();
+
+    // Update select-all checkbox states based on no-results messages
+    updateSelectAllCheckboxStates();
+
+    // Update the badge count after filtering
+    updateBugReportButtonBadge();
 }
 
 // Add pagination function
@@ -470,7 +481,32 @@ $(document).ready(function() {
     if (disabilityFilter) {
         $(disabilityFilter).on('change', () => applyFilters(impactFilter, tagFilter, disabilityFilter));
     }
-    updateSelectAllCheckboxState();
+
+    // Set up select-all checkboxes for violations and incomplete tabs
+    ['violations', 'incomplete'].forEach(tabName => {
+        const selectAllCheckbox = document.getElementById('select-all-checkbox-' + tabName);
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const checked = this.checked;
+                const tabContent = document.querySelector('[data-tab-content="' + tabName + '"]');
+                if (tabContent && !tabContent.classList.contains('hidden')) {
+                    // Only select/deselect visible checkboxes
+                    tabContent.querySelectorAll('input[type="checkbox"][id^="issue-"]').forEach(cb => {
+                        const issueCard = cb.closest('.issue-card');
+                        if (issueCard && issueCard.style.display !== 'none') {
+                            cb.checked = checked;
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    // Initial update of select-all checkbox states
+    updateSelectAllCheckboxStates();
+
+    // Initial update of badge count
+    updateBugReportButtonBadge();
 });
 
 // --- DASHBOARD TABLE SEARCH ---
@@ -713,3 +749,74 @@ function updateSelectAllCheckboxState() {
         selectAll.disabled = !!noResults;
     }
 }
+
+// Add this new function to update select-all checkbox states
+function updateSelectAllCheckboxStates() {
+    // Check violations tab
+    const violationsTabContent = document.querySelector('[data-tab-content="violations"]');
+    const violationsNoResults = violationsTabContent ? violationsTabContent.querySelector('.no-results-message:not(.hidden)') : null;
+    const violationsSelectAll = document.getElementById('select-all-checkbox-violations');
+    
+    if (violationsSelectAll) {
+        violationsSelectAll.disabled = !!violationsNoResults;
+        if (violationsNoResults) {
+            violationsSelectAll.checked = false;
+        }
+    }
+    
+    // Check incomplete tab
+    const incompleteTabContent = document.querySelector('[data-tab-content="incomplete"]');
+    const incompleteNoResults = incompleteTabContent ? incompleteTabContent.querySelector('.no-results-message:not(.hidden)') : null;
+    const incompleteSelectAll = document.getElementById('select-all-checkbox-incomplete');
+    
+    if (incompleteSelectAll) {
+        incompleteSelectAll.disabled = !!incompleteNoResults;
+        if (incompleteNoResults) {
+            incompleteSelectAll.checked = false;
+        }
+    }
+}
+
+// Add this new function to update the bug report button badge
+function updateBugReportButtonBadge() {
+    const bugBtn = document.getElementById('generateBugReportBtn');
+    if (!bugBtn) return;
+    
+    const selectedCheckboxes = document.querySelectorAll('.issue-checkbox:checked');
+    const count = selectedCheckboxes.length;
+    
+    // Remove existing badge if any
+    const existingBadge = bugBtn.querySelector('.badge-count');
+    if (existingBadge) {
+        existingBadge.remove();
+    }
+    
+    // Add new badge if there are selected items
+    if (count > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'badge-count absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold';
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.fontSize = '10px';
+        badge.style.minWidth = '20px';
+        badge.style.height = '20px';
+        bugBtn.appendChild(badge);
+    }
+}
+
+// Update the existing change event listener to include badge updates
+document.addEventListener('change', function () {
+    const anyChecked = document.querySelectorAll('input[type="checkbox"]:checked').length > 0;
+
+    const bugBtn = document.getElementById('generateBugReportBtn');
+    if (bugBtn) {
+        bugBtn.disabled = !anyChecked;
+        bugBtn.classList.toggle('bg-blue-600', anyChecked);
+        bugBtn.classList.toggle('hover:bg-blue-700', anyChecked);
+        bugBtn.classList.toggle('cursor-pointer', anyChecked);
+        bugBtn.classList.toggle('bg-gray-300', !anyChecked);
+        bugBtn.classList.toggle('cursor-not-allowed', !anyChecked);
+    }
+    
+    // Update the badge count
+    updateBugReportButtonBadge();
+});
