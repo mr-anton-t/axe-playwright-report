@@ -1271,7 +1271,7 @@ div.mb-6>.grid-cols-4 {
 
 .sort-icon {
     margin-left: 0.25rem;
-    opacity: 0.5;
+    opacity: 1;
 }
 
 th.active .sort-icon {

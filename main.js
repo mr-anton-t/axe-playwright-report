@@ -713,35 +713,6 @@ function sortTable(sortBy, direction) {
     });
 }
 
-// Initialize table sorting
-$(document).ready(function() {
-    document.querySelectorAll('#sortable-table th[data-sort]').forEach(header => {
-        header.addEventListener('click', () => {
-            const sortBy = header.getAttribute('data-sort');
-            const isActive = header.classList.contains('active');
-            const sortIcon = header.querySelector('.sort-icon');
-            const currentDirection = (sortIcon && sortIcon.textContent === '↓') ? 'desc' : 'asc';
-            const newDirection = isActive && currentDirection === 'desc' ? 'asc' : 'desc';
-
-            // Remove active class and reset sort icons from all headers
-            document.querySelectorAll('#sortable-table th[data-sort]').forEach(h => {
-                h.classList.remove('active');
-                const icon = h.querySelector('.sort-icon');
-                if (icon) icon.textContent = '';
-            });
-
-            // Set active class and sort icon on current header
-            header.classList.add('active');
-            if (sortIcon) {
-                sortIcon.textContent = newDirection === 'desc' ? '↓' : '↑';
-            }
-
-            // Call sort function
-            sortTable(sortBy, newDirection);
-        });
-    });
-});
-
 function updateSelectAllCheckboxState() {
     const noResults = document.querySelector('.no-results-message:not(.hidden)');
     const selectAll = document.getElementById('select-all-checkbox');

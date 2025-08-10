@@ -36,7 +36,7 @@ function generateBaseDashboard(template) {
             <header>
                 <div class="container mx-auto flex justify-between">
                     <h1 class="header-text text-2xl font-bold text-gray-800">Accessibility Report Dashboard</h1>
-                    <p class="text-sm text-gray-500">Powered by axe-core and Playwright</p>
+                    <p class="text-sm text-gray-500">Powered by axe-core</p>
                 </div>
             </header>
             
@@ -802,21 +802,13 @@ function generateTableCards(reports) {
     });
 
     // Default sort: Violations desc
-    let sortKey = 'violations';
+    let sortKey = 'critical_elements';
     let sortDir = 'desc';
 
     // Table header with sort icons
     function getSortIcon(col) {
         if (sortKey !== col) return '<span class="sort-icon" style="display:inline-block;width:1em;"></span>';
         return sortDir === 'asc' ? '<span class="sort-icon" style="display:inline-block;width:1em;">↑</span>' : '<span class="sort-icon" style="display:inline-block;width:1em;">↓</span>';
-    }
-    // Remove getSortTitle function
-    function getInapplicableHeader() {
-        return `Inapplicable ${getSortIcon('inapplicable')}
-            <span class="inapplicable-tooltip-wrapper" style="position: relative;">
-                <span style="border-bottom:1px dotted #000; cursor:pointer;">&#9432;</span>
-                <span class="tooltip-text">Rules that didn’t apply because the page had no relevant elements to test</span>
-            </span>`;
     }
 
     let tableHeader = `
