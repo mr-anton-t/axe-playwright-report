@@ -186,27 +186,28 @@ async function highlightElement(element: Locator, index: number, color: string) 
     }
 }
 
-function normalizeUrl(url: string): string {
-    const urlObj = new URL(url, "http://dummy.base"); // base required for relative URLs
+function normalizeUrl(url) {
+    const urlObj = new URL(url, "http://dummy.base");
 
-    // Normalize path
     const normalizedPath = urlObj.pathname
         .split("/")
+        .filter(Boolean)
         .map(segment => {
-            if (/^\d+$/.test(segment)) return ":id";                      // Numeric ID
-            if (/^[a-f0-9-]{36}$/i.test(segment)) return ":uuid";         // UUID v4
-            if (/^[a-f0-9]{8,}$/i.test(segment)) return ":hash";          // Long hash
+            if (segment.includes(".")) return segment; // Allow file names like inventory.html
+            if (/^\d+$/.test(segment)) return ":id"; // Numbers only
+            if (/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]{5,36}$/.test(segment)) return ":value";
+            if (/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9-]{4,11}$/.test(segment)) return ":slug_id";
+            if (/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9-]{12,36}$/.test(segment)) return ":uuid";
             return segment;
         })
         .join("/");
 
-    // Normalize query params
     const params = Array.from(urlObj.searchParams.entries())
         .map(([key]) => `${key}=*`)
-        .sort(); // ensure consistent order
+        .sort();
 
     const normalizedSearch = params.length > 0 ? `?${params.join("&")}` : "";
 
-    return normalizedPath + normalizedSearch;
+    return "/" + normalizedPath + normalizedSearch;
 }
 
