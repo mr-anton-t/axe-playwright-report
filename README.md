@@ -69,7 +69,7 @@ class MyTest {
 ### 2. Configure scan options (optional)
 
 Having accessibility env file gives you the flexibility to customize your scan settings.
-With config file it allows:
+With the config file it allows:
 - enable/disable scanning (default: `on`)
 - custom output directory (default: `axe-playwright-report`)
 - enable/disable screenshots capture (default: `off`)
@@ -78,6 +78,8 @@ With config file it allows:
     - `none` - keep all reports,
     - `exact` - merge only identical reports,
     - `best` - keeps the report with the most accessibility issues
+- use custom regular expression for improving page normalization algorithm
+    - pass a list of regular expressions in array format '["regExp1", "regExp2"]'
 
 Create a `.env.a11y` file in your project root:
 
@@ -87,12 +89,24 @@ OUTPUT_DIR=custom-report-dir
 MERGE_STRATEGY=best
 SCREENSHOT=on
 TAGS=wcag2a,wcag2aa
+CUSTOM_REG_EXP='["^\/\w+-\w+-\w+\.html$", "\/([^\/]*-[^\/]*)"]'
 ```
 
 - `SCAN`: Set to `on` to enable scanning.
 - `OUTPUT_DIR`: Directory for report output (default: `axe-playwright-report`).
 - `SCREENSHOT`: Set to `on` to capture screenshots of issues.
 - `TAGS`: Comma-separated list of axe-core tags to filter rules.
+
+#### Recommendation for custom RegExp
+By default, the library uses a normalization algorithm to avoid duplicate reports for the same page, for example, UUID, numeric or alphanumeric IDs.  
+If you have a specific page structure not normalized by the default algorithm, you can use the `CUSTOM_REG_EXP` option to improve the results. 
+Follow the structure of how the library operates with the regular expression.
+Examples:
+```
+- CUSTOM_REG_EXP='["^\/\w+-\w+-\w+\.html$", "\/([^\/]*-[^\/]*)"]'
+- CUSTOM_REG_EXP='["^\/\w+-\w+-\w+\.html$"]
+```
+
 
 ### 3. Generate the dashboard report
 

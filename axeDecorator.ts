@@ -50,7 +50,7 @@ export function axeScan<This, Args extends any[], Return>() {
                 const id = randomUUID() + new Date().getTime().toString().slice(-4);
                 accessibilityScanResults['id'] = id;
 
-                let url = normalizeUrl(accessibilityScanResults.url)
+                let url = normalizeUrl(accessibilityScanResults.url, accessibilityConfig.customRegExp);
                 accessibilityScanResults['newUrl'] = url;
                 accessibilityScanResults['pagePath'] = url.replace(process.env.URL ?? "", "");
                 const violations = accessibilityScanResults.violations;
@@ -127,6 +127,7 @@ function loadEnvConfig(envPath: string = ".env.a11y") {
         outputDir: "axe-playwright-report/pages",
         screenshots: false,
         tags: [] as string[],
+        customRegExp: [] as RegExp[],
     };
 
     if (!fs.existsSync(envPath)) return defaultConfig;
@@ -144,18 +145,34 @@ function loadEnvConfig(envPath: string = ".env.a11y") {
         env[key] = rest.join("=").trim().replace(/^['"]|['"]$/g, "");
     }
 
+    let regexPatterns;
+
+    const raw = env["CUSTOM_REG_EXP"] || process.env.CUSTOM_REG_EXP!; // raw string from env
+    if (raw != undefined) {
+        const patternStrings = raw.slice(1, -1).split('", "').map(s => s.replace(/^"|"$/g, ''));
+
+            regexPatterns = patternStrings.map(pattern => {
+                try {
+                    return new RegExp(pattern, "g"); // assumes no flags, raw pattern only
+                } catch (e) {
+                    throw new Error(`Invalid regex pattern: ${pattern} — ${e}`);
+                }
+            });
+    }
+
     return {
-        scan: env["SCAN"] ? env["SCAN"].toUpperCase() === "ON" : defaultConfig.scan,
-        outputDir: env["OUTPUT_DIR"] ? env["OUTPUT_DIR"] + "/pages" : defaultConfig.outputDir,
-        screenshots: env["SCREENSHOT"] ? env["SCREENSHOT"].toUpperCase() === "ON" : defaultConfig.screenshots,
-        tags: env["TAGS"] ? env["TAGS"].split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.tags,
+        scan: env["SCAN"] ? env["SCAN"].toUpperCase() === "ON" : (process.env.SCAN ? process.env.SCAN.toUpperCase() === "ON" : defaultConfig.scan),
+        outputDir: env["OUTPUT_DIR"] ? env["OUTPUT_DIR"] + "/pages" : (process.env.OUTPUT_DIR ? process.env.OUTPUT_DIR + "/pages" : defaultConfig.outputDir),
+        screenshots: env["SCREENSHOT"] ? env["SCREENSHOT"].toUpperCase() === "ON" : (process.env.SCREENSHOT ? process.env.SCREENSHOT.toUpperCase() === "ON" : defaultConfig.screenshots),
+        tags: env["TAGS"] ? env["TAGS"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.TAGS ? process.env.TAGS.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.tags),
+        customRegExp: regexPatterns
     };
 }
 
 async function highlightElement(element: Locator, index: number, color: string) {
     try {
         await element.evaluate((el, args) => {
-            el.scrollIntoView({ behavior: "auto", block: "center" });
+            el.scrollIntoView({behavior: "auto", block: "center"});
             el.style.position = "relative"; // Ensure proper placement
             el.style.outline = `2px solid ${args.color}`; // Highlight border with given color
 
@@ -186,28 +203,47 @@ async function highlightElement(element: Locator, index: number, color: string) 
     }
 }
 
-function normalizeUrl(url) {
+function normalizeUrl(url, customPatterns: RegExp[] = []) {
     const urlObj = new URL(url, "http://dummy.base");
+    let pathname = urlObj.pathname;
+    let isCustomRegExp = false;
 
-    const normalizedPath = urlObj.pathname
-        .split("/")
-        .filter(Boolean)
-        .map(segment => {
-            if (segment.includes(".")) return segment; // Allow file names like inventory.html
-            if (/^\d+$/.test(segment)) return ":id"; // Numbers only
-            if (/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]{5,36}$/.test(segment)) return ":value";
-            if (/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9-]{4,11}$/.test(segment)) return ":slug_id";
-            if (/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9-]{12,36}$/.test(segment)) return ":uuid";
-            return segment;
-        })
-        .join("/");
+    let counter = 1; // Unique counter across all matches
+    for (const pattern of customPatterns) {
+        const matches = [...pathname.matchAll(pattern)];
 
-    const params = Array.from(urlObj.searchParams.entries())
-        .map(([key]) => `${key}=*`)
-        .sort();
+        if (matches.length > 0) {
+            for (const match of matches) {
+                pathname = pathname.replace(match[0], `/{$regExp${counter++}}`);
+            }
+            isCustomRegExp = true;
+        }
+        if (!pathname.includes("/", 0))  pathname += "/";
+    }
+    if (isCustomRegExp) {
+        return pathname + urlObj.search;
+    } else {
 
-    const normalizedSearch = params.length > 0 ? `?${params.join("&")}` : "";
+        const normalizedPath = urlObj.pathname
+            .split("/")
+            .filter(Boolean)
+            .map(segment => {
+                if (segment.includes(".")) return segment; // e.g., inventory.html
+                if (/^\d+$/.test(segment)) return ":id"; // numbers only
+                if (/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]{5,36}$/.test(segment)) return ":value";
+                if (/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9-]{4,11}$/.test(segment)) return ":slug_id";
+                if (/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9-]{12,36}$/.test(segment)) return ":uuid";
+                return segment;
+            })
+            .join("/");
 
-    return "/" + normalizedPath + normalizedSearch;
+        const params = Array.from(urlObj.searchParams.entries())
+            .map(([key]) => `${key}=*`)
+            .sort();
+
+        const normalizedSearch = params.length > 0 ? `?${params.join("&")}` : "";
+
+        return "/" + normalizedPath + normalizedSearch;
+    }
 }
 
