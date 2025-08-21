@@ -31,10 +31,7 @@
   ],
   "author": "Yevhenii Otsevych",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/eotsevych/axe-playwright-report.git"
-  },
+
   "peerDependencies": {
     "@playwright/test": ">=1.44.0",
     "@axe-core/playwright": ">=4.10.0"
