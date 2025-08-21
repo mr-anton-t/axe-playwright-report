@@ -6,3 +6,5 @@ class PlaywrightAxeReport implements Reporter {
     main();
   }
 }
+
+export default PlaywrightAxeReport;
