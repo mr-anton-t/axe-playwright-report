@@ -5,15 +5,19 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "build-report": "buildReport.js"
+    "build-report": "buildReport.js",
+    "merge-reports": "mergeReports.js"
   },
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
+    "build-report": "build-report",
     "test": "echo \"No tests yet\" && exit 0"
   },
   "files": [
     "dist",
+    "buildReport.js",
+    "mergeReports.js",
     "README.md",
     "LICENSE",
     "disabilityAffectedData",
