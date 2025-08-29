@@ -148,7 +148,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
     reporter: [
-        ['./node_modules/axe-playwright-report/axeBuildReport.ts'],
+        ['axe-playwright-report/axeBuildReport'],
     ],
 });
 ```
