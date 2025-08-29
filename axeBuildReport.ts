@@ -1,5 +1,5 @@
 import type {Reporter} from '@playwright/test/reporter';
-import { main} from './report';
+import { main} from './buildReport';
 
 class AxeReporter implements Reporter {
 

@@ -140,6 +140,25 @@ Based on the amount of selected issues, it generates either a single bug report 
 ![Grouped Bug Report Example](./assets/grouped_bug_report.png)
 
 
+## Playwright Custom Reporter
+Using the Playwright custom reporter, you can generate an accessibility report after test run automatically.  
+To enable this feature, add the following code to your `playwright.config.ts` file:
+```typescript
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+    reporter: [
+        ['./node_modules/axe-playwright-report/axeBuildReport.ts'],
+    ],
+});
+```
+
+## axe-playwright-report CLI
+There are two commands available in the CLI:
+- `build-report`: Generates a dashboard report.
+- `merge-reports`: Merges multiple reports into a single report. This command is integrated into the `build-report` command. As the separate command will be useful when you run tests in parallel using Playwright Sharding.
+
+
 ### Example Report
 
 Below is an example of the generated dashboard report:
