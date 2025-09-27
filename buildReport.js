@@ -1485,6 +1485,7 @@ function test(allowFailure = false, delayTermination = false) {
             logs.push(`${colors.orange}\nBuild continuing due to allowFailure flag set.${colors.reset}\n`);
         } else {
             logs.push(`${colors.red}\nBuild stopped due to accessibility violations.${colors.reset}\n`);
+            console.log(logs.join(''));
             if (!delayTermination) process.exit(1);
         }
     } else {
