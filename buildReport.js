@@ -3,14 +3,34 @@
 const fs = require('fs');
 const path = require("path");
 const URL = require('url').URL;
-require('dotenv').config({ path: path.join(process.cwd(), '.env.a11y') });
+require('dotenv').config({path: path.join(process.cwd(), '.env.a11y')});
 
 const BASE_DIR = process.env.OUTPUT_DIR || './axe-playwright-report'
 const PAGES_DIR = '/pages';
 const MERGE_STRATEGY = process.env.MERGE_STRATEGY || 'best';
 
-let allFiles = [];
-let jsonFiles = [];
+
+function cleanUp() {
+    if (fs.existsSync(BASE_DIR)) {
+        fs.rmSync(BASE_DIR, {recursive: true, force: true});
+    }
+}
+
+function getReportFiles() {
+    let allFiles = [];
+
+    try {
+        allFiles = fs.readdirSync(BASE_DIR + PAGES_DIR);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log(`Directory ${path.join(process.cwd(), BASE_DIR, PAGES_DIR)} not found`);
+            return
+        } else {
+            throw err
+        }
+    }
+    return allFiles.filter(file => file.endsWith('.json'));
+}
 
 function getAxeVersion(version) {
     const parts = version.split('.');
@@ -68,7 +88,7 @@ function generateBaseDashboard(template) {
 }
 
 function generateBaseContent(template, report) {
-    const { userAgent, windowWidth, windowHeight } = report.testEnvironment || {};
+    const {userAgent, windowWidth, windowHeight} = report.testEnvironment || {};
 
     return template.replace("{{CONTENT}}",
         `<body>
@@ -736,16 +756,16 @@ function generateSummaryCart(reports) {
 function generateTableCards(reports) {
     // Add sorting state and logic
     const columns = [
-        { key: 'page', label: 'Page' },
+        {key: 'page', label: 'Page'},
         {key: "critical_elements", label: "Critical Elements"},
         {key: "serious_elements", label: "Serious Elements"},
-        { key: 'moderate_elements', label: 'Moderate Elements' },
-        { key: 'minor_elements', label: 'Minor Elements' },
-        { key: 'violations', label: 'Violations Rules' },
-        { key: 'incomplete', label: 'Incomplete Rules' },
-        { key: 'passes', label: 'Passes Rules' },
-        { key: 'inapplicable', label: 'Inapplicable Rules' },
-        { key: 'impacts', label: 'Impacts' }
+        {key: 'moderate_elements', label: 'Moderate Elements'},
+        {key: 'minor_elements', label: 'Minor Elements'},
+        {key: 'violations', label: 'Violations Rules'},
+        {key: 'incomplete', label: 'Incomplete Rules'},
+        {key: 'passes', label: 'Passes Rules'},
+        {key: 'inapplicable', label: 'Inapplicable Rules'},
+        {key: 'impacts', label: 'Impacts'}
     ];
     // Prepare data for sorting
     let tableData = reports.map(report => {
@@ -838,7 +858,7 @@ function generateTableCards(reports) {
                     }
                 }
                 return 0;
-            }  else if (sortKey === 'pagePath') {
+            } else if (sortKey === 'pagePath') {
                 return (sortDir === 'asc' ? 1 : -1) * a.pagePath.localeCompare(b.pagePath);
             } else if (typeof a[sortKey] === 'string') {
                 return (sortDir === 'asc' ? 1 : -1) * a[sortKey].localeCompare(b[sortKey]);
@@ -847,6 +867,7 @@ function generateTableCards(reports) {
             }
         });
     }
+
     sortTableData();
 
     function renderTableRows() {
@@ -1121,9 +1142,10 @@ function updateBugReportButtonBadge() {
 
 // Main function to generate the report
 function generateReport() {
-    const template = fs.readFileSync(path.join(__dirname, './index.template.html'), 'utf8');
+    const dirname = __dirname.replace(/\/dist$/, '');
+    const template = fs.readFileSync(path.join(dirname, './index.template.html'), 'utf8');
     const reports = readAllJsonAndPutIntoArray();
-    const affected = readJSONFile(__dirname + "/disabilityAffectedData/" + getAxeVersion(reports[0].testEngine.version) + ".json");
+    const affected = readJSONFile(dirname + "/disabilityAffectedData/" + getAxeVersion(reports[0].testEngine.version) + ".json");
 
     reports.forEach(report => {
         let baseContent = generateBaseContent(template, report);
@@ -1147,10 +1169,11 @@ function generateReport() {
 }
 
 function generateDashboard() {
-    const template = fs.readFileSync(path.join(__dirname, './index.template.html'), 'utf8');
+    const dirname = __dirname.replace(/\/dist$/, '');
+    const template = fs.readFileSync(path.join(dirname, './index.template.html'), 'utf8');
     const outputPath = path.join(process.cwd(), BASE_DIR, 'index.html');
     const reports = readAllJsonAndPutIntoArray();
-    const affected = readJSONFile(__dirname + "/disabilityAffectedData/" + getAxeVersion(reports[0].testEngine.version) + ".json");
+    const affected = readJSONFile(dirname + "/disabilityAffectedData/" + getAxeVersion(reports[0].testEngine.version) + ".json");
 
     let dashboardBody = generateBaseDashboard(template);
     const summaryCards = generateSummaryCart(reports);
@@ -1171,7 +1194,7 @@ function generateDashboard() {
 }
 
 function deduplicate(strategy) {
-    const reports = jsonFiles.map(file => {
+    const reports = getReportFiles().map(file => {
         const filePath = path.join(BASE_DIR + PAGES_DIR, file);
         const raw = fs.readFileSync(filePath, 'utf-8');
         const data = JSON.parse(raw);
@@ -1218,6 +1241,11 @@ function deduplicate(strategy) {
                 const filePath = path.join(BASE_DIR + PAGES_DIR, file);
                 if (fs.existsSync(filePath)) {
                     fs.unlinkSync(filePath);
+                    // Wait up to 1 second for the file to be deleted
+                    const start = Date.now();
+                    while (fs.existsSync(filePath) && Date.now() - start < 1000) {
+                        // Busy-wait, but will break after 1 second
+                    }
                 }
             });
         }
@@ -1260,22 +1288,210 @@ function deduplicate(strategy) {
                 const filePath = path.join(BASE_DIR + PAGES_DIR, file);
                 if (fs.existsSync(filePath)) {
                     fs.unlinkSync(filePath);
+                    // Wait up to 1 second for the file to be deleted
+                    const start = Date.now();
+                    while (fs.existsSync(filePath) && Date.now() - start < 1000) {
+                        // Busy-wait, but will break after 1 second
+                    }
                 }
             });
         }
     }
 }
 
-function formatDate(dateStr) {
-    const date = new Date(dateStr);
-    const day = String(date.getDate()).padStart(2, '0');
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const month = monthNames[date.getMonth()];
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const mins = String(date.getMinutes()).padStart(2, '0');
-    return `${day}-${month}-${year} ${hours}:${mins}`;
+function generateCategoryImpactSummary(print = true) {
+    const reports = getReportFiles().map(file => {
+        const filePath = path.join(BASE_DIR + PAGES_DIR, file);
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        return JSON.parse(raw);
+    });
+
+    // Violations
+
+    const vCritical = reports
+        .flatMap(report => report.violations.flatMap(v => v.nodes))
+        .filter(node => node.impact === 'critical') // filter nodes directly
+        .length;
+
+    const vSerious = reports
+        .flatMap(report => report.violations.flatMap(v => v.nodes))
+        .filter(node => node.impact === 'serious') // filter nodes directly
+        .length;
+
+    const vModerate = reports
+        .flatMap(report => report.violations.flatMap(v => v.nodes))
+        .filter(node => node.impact === 'moderate') // filter nodes directly
+        .length;
+
+    const vMinor = reports
+        .flatMap(report => report.violations.flatMap(v => v.nodes))
+        .filter(node => node.impact === 'minor') // filter nodes directly
+        .length;
+
+    // Incomplete
+    const iCritical = reports
+        .flatMap(report => report.incomplete.flatMap(v => v.nodes))
+        .filter(node => node.impact === 'critical') // filter nodes directly
+        .length;
+
+    const iSerious = reports
+        .flatMap(report => report.incomplete.flatMap(v => v.nodes))
+        .filter(node => node.impact === 'serious') // filter nodes directly
+        .length;
+
+    const iModerate = reports
+        .flatMap(report => report.incomplete.flatMap(v => v.nodes))
+        .filter(node => node.impact === 'moderate') // filter nodes directly
+        .length;
+    const iMinor = reports
+        .flatMap(report => report.incomplete.flatMap(v => v.nodes))
+        .filter(node => node.impact === 'minor') // filter nodes directly
+        .length;
+
+    const inapplicable = reports
+        .flatMap(report => report.inapplicable.flatMap(v => v.nodes))
+        .length;
+    const passed = reports
+        .flatMap(report => report.passes.flatMap(v => v.nodes))
+        .length;
+
+    const impactSummary = {
+        "Violations": {
+            "Critical": vCritical,
+            "Serious": vSerious,
+            "Moderate": vModerate,
+            "Minor": vMinor
+        }
+        ,
+        "Incomplete": {
+            "Critical": iCritical,
+            "Serious": iSerious,
+            "Moderate": iModerate,
+            "Minor": iMinor
+        }
+        ,
+        "Passed": passed,
+        "Inapplicable": inapplicable
+    }
+
+    fs.writeFileSync(path.join(BASE_DIR, 'impactSummary.json'), JSON.stringify(impactSummary, null, 2), 'utf-8');
+    if (print) {
+        const colors = {
+            reset: "\x1b[0m",
+            red: "\x1b[31m",
+            yellow: "\x1b[33m",
+            green: "\x1b[32m",
+            cyan: "\x1b[36m",
+            gray: "\x1b[90m",
+            bold: "\x1b[1m"
+        };
+
+        console.log(`\n${colors.bold}Summary${colors.reset}\n${colors.gray}────────────────────────────────────────────────────────────────────────────── ${colors.reset}`)
+
+        const impacts = ["Critical", "Serious", "Moderate", "Minor"];
+        for (const impact of impacts) {
+            const vCount = impactSummary.Violations[impact];
+            const iCount = impactSummary.Incomplete[impact];
+            const total = vCount + iCount;
+
+            let color = colors.gray;
+            if (impact === "Critical") color = colors.red;
+            else if (impact === "Serious") color = colors.yellow;
+            else if (impact === "Moderate") color = colors.cyan;
+
+            console.log(
+                `${impact.padEnd(8)}: ${color}${total.toString().padStart(5)}${colors.reset}  (Violations: ${vCount.toString().padStart(3)} + Incomplete: ${iCount.toString().padStart(3)})`
+            );
+        }
+
+        console.log(`Passed  :  ${colors.green}${impactSummary.Passed}${colors.reset}\n`);
+    }
+    return impactSummary;
+}
+
+function test(allowFailure = false, delayTermination = false) {
+    const violationThreshold = process.env.VIOLATION_THRESHOLD
+    const incompleteThreshold = process.env.INCOMPLETE_THRESHOLD
+    const res = generateCategoryImpactSummary(false);
+    let fail = false;
+    const colors = {
+        reset: "\x1b[0m",
+        red: "\x1b[31m",
+        lightRed: "\x1b[91m",
+        yellow: "\x1b[33m",
+        green: "\x1b[32m",
+        gray: "\x1b[90m",
+        bold: "\x1b[1m",
+        orange: "\x1b[38;5;208m"
+    };
+
+    const violationThresholds = []
+    const incompleteThresholds = []
+
+    console.log(`\n${colors.bold}Accessibility Quality Gate Evaluation${colors.reset}\n${colors.gray}────────────────────────────────────────────────────────────────────────────── ${colors.reset}`)
+
+    const logs = []
+
+    if (violationThreshold === undefined && incompleteThreshold === undefined || (violationThreshold === "" && incompleteThreshold === "")) {
+        logs.push(`${colors.bold}No thresholds set, skipping pass/fail check.${colors.reset}\n`);
+        return;
+    } else {
+        const prefix = allowFailure === true ? `${colors.orange}WARN` : `${colors.red}FAIL`
+        if (violationThreshold !== undefined) {
+            violationThreshold.split(",").forEach(threshold => {
+                violationThresholds.push(threshold.trim())
+            })
+            for (let i = 0; i <= violationThresholds.length; i++) {
+                if (violationThresholds[i] !== undefined) {
+                    const count = Object.values(res.Violations)[i];
+                    if (count > violationThresholds[i]) {
+                        logs.push(
+                            `${prefix}: ${Object.keys(res.Violations)[i]} Violation Threshold Exceeded (${count} <= ${violationThresholds[i]})${colors.reset}\n`
+                        );
+                        fail = true;
+                    } else {
+                        logs.push(
+                            `${colors.green}PASS: ${Object.keys(res.Violations)[i]} Violation Threshold Not Exceeded (${count} <= ${violationThresholds[i]})${colors.reset}\n`
+                        );
+                    }
+                }
+            }
+        }
+        if (incompleteThreshold !== undefined) {
+            incompleteThreshold.split(",").forEach(threshold => {
+                incompleteThresholds.push(threshold.trim())
+            })
+            for (let i = 0; i < incompleteThresholds.length; i++) {
+                if (incompleteThresholds[i] !== undefined) {
+                    const count = Object.values(res.Incomplete)[i];
+                    if (count > incompleteThresholds[i]) {
+                        logs.push(
+                            `${prefix}: ${Object.keys(res.Incomplete)[i]} Incomplete Threshold Exceeded (${count} <= ${incompleteThresholds[i]})${colors.reset}\n`
+                        );
+                        fail = true;
+                    } else {
+                        logs.push(
+                            `${colors.green}PASS: ${Object.keys(res.Incomplete)[i]} Incomplete Threshold Not Exceeded (${count} <= ${incompleteThresholds[i]})${colors.reset}\n`
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    if (fail) {
+        if (allowFailure === true) {
+            fail = false;
+            logs.push(`${colors.orange}\nBuild continuing due to allowFailure flag set.${colors.reset}\n`);
+        } else {
+            logs.push(`${colors.red}\nBuild stopped due to accessibility violations.${colors.reset}\n`);
+            if (!delayTermination) process.exit(1);
+        }
+    } else {
+        logs.push(`${colors.green}\nNo blocking accessibility issues. Proceeding...${colors.reset}\n`);
+    }
+    console.log(logs.join(''));
+    return fail
 }
 
 function normalizePath(url) {
@@ -1298,30 +1514,19 @@ function normalizePath(url) {
 
 
 function main() {
-    try {
-        allFiles = fs.readdirSync(BASE_DIR + PAGES_DIR);
-    } catch (err) {
-        if (err.code === 'ENOENT') {
-            console.log(`Directory ${path.join(process.cwd(), BASE_DIR, PAGES_DIR)} not found`);
-            return
-        } else {
-            throw err
-        }
-    }
-
-    console.log("Generating Accessibility Report...");
-    jsonFiles = allFiles.filter(file => file.endsWith('.json'));
-
+    console.log("Generating Accessibility Reports...");
     deduplicate(MERGE_STRATEGY);
+    generateCategoryImpactSummary()
     generateReport();
     generateDashboard();
 
-    fs.copyFileSync(path.join(__dirname, './styles.css'), path.join(process.cwd(), BASE_DIR, './styles.css'));
-    fs.copyFileSync(path.join(__dirname, './main.js'), path.join(process.cwd(), BASE_DIR, './main.js'));
+    const dirname = __dirname.replace(/\/dist$/, '');
+    fs.copyFileSync(path.join(dirname, './styles.css'), path.join(process.cwd(), BASE_DIR, './styles.css'));
+    fs.copyFileSync(path.join(dirname, './main.js'), path.join(process.cwd(), BASE_DIR, './main.js'));
 
 }
 
-module.exports = {main, deduplicate};
+module.exports = {main, deduplicate, cleanUp, test};
 
 if (require.main === module) {
     main();
