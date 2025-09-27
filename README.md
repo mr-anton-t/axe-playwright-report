@@ -175,6 +175,11 @@ export default defineConfig({
     ],
 });
 ```
+`softAssert` parameter is optional and used for controlling the 'test' command behavior within the following cases:
+- `true`: the process will fail if there are accessibility issues.
+- `false`: the process will not fail if there are accessibility issues.
+- not specified: the test command will be not initiated, a process will not fail if there are accessibility issues.
+
 
 ## axe-playwright-report CLI
 There are two commands available in the CLI:
