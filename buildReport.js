@@ -1479,19 +1479,20 @@ function test(allowFailure = false, delayTermination = false) {
         }
     }
 
-    console.log(logs.join(''));
     if (fail) {
         if (allowFailure === true) {
             fail = false;
             logs.push(`${colors.orange}\nBuild continuing due to allowFailure flag set.${colors.reset}\n`);
+            console.log(logs.join(''));
         } else {
             logs.push(`${colors.red}\nBuild stopped due to accessibility violations.${colors.reset}\n`);
+            console.log(logs.join(''));
             if (!delayTermination) process.exit(1);
         }
     } else {
+        console.log(logs.join(''));
         logs.push(`${colors.green}\nNo blocking accessibility issues. Proceeding...${colors.reset}\n`);
     }
-
     return fail
 }
 
