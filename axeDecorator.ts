@@ -48,8 +48,12 @@ export function axeScan<This, Args extends any[], Return>() {
                 if (accessibilityConfig.tags.length > 0) axeBuilder.withTags(accessibilityConfig.tags);
                 if (accessibilityConfig.withRules.length > 0) axeBuilder.withRules(accessibilityConfig.withRules);
                 if (accessibilityConfig.excludeRules.length > 0) axeBuilder.disableRules(accessibilityConfig.excludeRules);
-                if (accessibilityConfig.include !== undefined) axeBuilder.include(accessibilityConfig.include);
-                if (accessibilityConfig.exclude !== undefined) axeBuilder.include(accessibilityConfig.exclude);
+                if (accessibilityConfig.exclude.length > 0) {
+                    accessibilityConfig.exclude.forEach(locator  => axeBuilder.exclude(locator));
+                }
+                if (accessibilityConfig.include.length > 0) {
+                    accessibilityConfig.include.forEach(locator  => axeBuilder.include(locator));
+                }
 
                 const accessibilityScanResults = await axeBuilder.analyze();
 
@@ -135,8 +139,8 @@ function loadEnvConfig(envPath: string = ".env.a11y") {
         tags: [] as string[],
         withRules: [] as string[],
         excludeRules: [] as string[],
-        include: undefined,
-        exclude: undefined,
+        include: [] as string[],
+        exclude: [] as string[],
         customRegExp: [] as RegExp[],
     };
 
@@ -177,8 +181,8 @@ function loadEnvConfig(envPath: string = ".env.a11y") {
         tags: env["TAGS"] ? env["TAGS"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.TAGS ? process.env.TAGS.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.tags),
         withRules: env["WITH_RULES"] ? env["WITH_RULES"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.WITH_RULES ? process.env.WITH_RULES.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.withRules),
         excludeRules: env["EXCLUDE_RULES"] ? env["EXCLUDE_RULES"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.EXCLUDE_RULES ? process.env.EXCLUDE_RULES.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.excludeRules),
-        include: env["INCLUDE"] ? env["INCLUDE"] : (process.env.INCLUDE ? process.env.INCLUDE : defaultConfig.include),
-        exclude: env["EXCLUDE"] ? env["EXCLUDE"] : (process.env.EXCLUDE ? process.env.EXCLUDE : defaultConfig.exclude),
+        include: env["INCLUDE"] ? env["INCLUDE"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.INCLUDE ? process.env.INCLUDE.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.include),
+        exclude: env["EXCLUDE"] ? env["EXCLUDE"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.EXCLUDE ? process.env.EXCLUDE.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.exclude),
         customRegExp: regexPatterns
     };
 }

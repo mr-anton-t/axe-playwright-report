@@ -25,8 +25,8 @@ The primary goal of this library is to enhance standard UI automation tests and 
 ## What This Library Offers
 
 1. **@axeScan() decorator**: Runs an accessibility scan after the method body is executed, allowing you to integrate accessibility checks seamlessly into your existing test methods.
-2. **build-report command**: Generates a dashboard report with backward compatibility for reports generated with axe-core/playwright.
-3. **pass-fail command**: enforces strict build rules in CI/CD pipelines.
+2. **`build-report` command**: Generates a dashboard report with backward compatibility for reports generated with axe-core/playwright.
+3. **`test` command**: enforces strict build rules in CI/CD pipelines.
 
 ## Installation
 
@@ -180,6 +180,20 @@ export default defineConfig({
 - `false`: the process will not fail if there are accessibility issues.
 - not specified: the test command will be not initiated, a process will not fail if there are accessibility issues.
 
+
+## CI/CD Pipeline Integration
+You can integrate the accessibility checks into your CI/CD pipeline by adding the `test` command to your build process.
+```bash
+npx axe-playwright-report test
+```
+This command will enforce accessibility baselines according provided `VIOLATION_THRESHOLD` and `INCOMPLETE_THRESHOLD` in array format by **Critical** and **Serious** impact separated by comma.  
+For example:
+```
+VIOLATION_THRESHOLD=10,10
+INCOMPLETE_THRESHOLD=25
+```
+means that the process will fail if there are more than 10 critical and 10 serious accessibility violations and more than 25 incomplete issues with critical impact level.  
+Arguments `--allow-failure` will allow the process to continue and report failers as warnings.
 
 ## axe-playwright-report CLI
 There are two commands available in the CLI:
