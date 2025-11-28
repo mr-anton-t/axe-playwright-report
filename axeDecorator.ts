@@ -43,9 +43,19 @@ export function axeScan<This, Args extends any[], Return>() {
                     return result;
                 }
 
-                const accessibilityScanResults = accessibilityConfig.tags.length > 0 ?
-                    await new AxeBuilder({page}).withTags((accessibilityConfig.tags)).analyze() :
-                    await new AxeBuilder({page}).analyze();
+                let axeBuilder = new AxeBuilder({page});
+                console.log(accessibilityConfig.withRules)
+                if (accessibilityConfig.tags.length > 0) axeBuilder.withTags(accessibilityConfig.tags);
+                if (accessibilityConfig.withRules.length > 0) axeBuilder.withRules(accessibilityConfig.withRules);
+                if (accessibilityConfig.excludeRules.length > 0) axeBuilder.disableRules(accessibilityConfig.excludeRules);
+                if (accessibilityConfig.exclude.length > 0) {
+                    accessibilityConfig.exclude.forEach(locator  => axeBuilder.exclude(locator));
+                }
+                if (accessibilityConfig.include.length > 0) {
+                    accessibilityConfig.include.forEach(locator  => axeBuilder.include(locator));
+                }
+
+                const accessibilityScanResults = await axeBuilder.analyze();
 
                 const id = randomUUID() + new Date().getTime().toString().slice(-4);
                 accessibilityScanResults['id'] = id;
@@ -127,6 +137,10 @@ function loadEnvConfig(envPath: string = ".env.a11y") {
         outputDir: "axe-playwright-report/pages",
         screenshots: false,
         tags: [] as string[],
+        withRules: [] as string[],
+        excludeRules: [] as string[],
+        include: [] as string[],
+        exclude: [] as string[],
         customRegExp: [] as RegExp[],
     };
 
@@ -165,6 +179,10 @@ function loadEnvConfig(envPath: string = ".env.a11y") {
         outputDir: env["OUTPUT_DIR"] ? env["OUTPUT_DIR"] + "/pages" : (process.env.OUTPUT_DIR ? process.env.OUTPUT_DIR + "/pages" : defaultConfig.outputDir),
         screenshots: env["SCREENSHOT"] ? env["SCREENSHOT"].toUpperCase() === "ON" : (process.env.SCREENSHOT ? process.env.SCREENSHOT.toUpperCase() === "ON" : defaultConfig.screenshots),
         tags: env["TAGS"] ? env["TAGS"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.TAGS ? process.env.TAGS.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.tags),
+        withRules: env["WITH_RULES"] ? env["WITH_RULES"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.WITH_RULES ? process.env.WITH_RULES.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.withRules),
+        excludeRules: env["EXCLUDE_RULES"] ? env["EXCLUDE_RULES"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.EXCLUDE_RULES ? process.env.EXCLUDE_RULES.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.excludeRules),
+        include: env["INCLUDE"] ? env["INCLUDE"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.INCLUDE ? process.env.INCLUDE.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.include),
+        exclude: env["EXCLUDE"] ? env["EXCLUDE"].split(",").map(t => t.trim()).filter(Boolean) : (process.env.EXCLUDE ? process.env.EXCLUDE.split(",").map(t => t.trim()).filter(Boolean) : defaultConfig.exclude),
         customRegExp: regexPatterns
     };
 }
@@ -246,4 +264,3 @@ function normalizeUrl(url, customPatterns: RegExp[] = []) {
         return "/" + normalizedPath + normalizedSearch;
     }
 }
-

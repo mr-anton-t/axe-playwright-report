@@ -11,6 +11,8 @@
     "types": ["node"],
     "noImplicitAny": false
   },
-  "include": ["axeDecorator.ts", "index.ts"],
+  "include": ["axeDecorator.ts", "index.ts",
+    "axeBuildReport.ts"
+  ],
   "exclude": ["dist", "node_modules"]
 }

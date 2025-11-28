@@ -25,7 +25,8 @@ The primary goal of this library is to enhance standard UI automation tests and 
 ## What This Library Offers
 
 1. **@axeScan() decorator**: Runs an accessibility scan after the method body is executed, allowing you to integrate accessibility checks seamlessly into your existing test methods.
-2. **build-report command**: Generates a dashboard report with backward compatibility for reports generated with axe-core/playwright.
+2. **`build-report` command**: Generates a dashboard report with backward compatibility for reports generated with axe-core/playwright.
+3. **`test` command**: enforces strict build rules in CI/CD pipelines.
 
 ## Installation
 
@@ -80,6 +81,12 @@ With the config file it allows:
     - `best` - keeps the report with the most accessibility issues
 - use custom regular expression for improving page normalization algorithm
     - pass a list of regular expressions in array format '["regExp1", "regExp2"]'
+- and all configuration options from axe-core, such as:
+    - `tags` - running access specific WCAG success criteria
+    - `withRules` - specify a list of rules to run
+    - `excludeRules` - specify a list of rules to exclude from running
+    - `include` - constrain an accessibility scan to only run against one specific part of a page
+    - `exclude` - exclude the specified elements and all of their descendants
 
 Create a `.env.a11y` file in your project root:
 
@@ -88,14 +95,26 @@ SCAN=on
 OUTPUT_DIR=custom-report-dir
 MERGE_STRATEGY=best
 SCREENSHOT=on
-TAGS=wcag2a,wcag2aa
 CUSTOM_REG_EXP='["^\/\w+-\w+-\w+\.html$", "\/([^\/]*-[^\/]*)"]'
+TAGS=wcag2a,wcag2aa
+WITH_RULES=color-contrast,image-alt
+EXCLUDE_RULES=link-in-text-block
+INCLUDE='.main-content'
+EXCLUDE='.main-content .footer'
 ```
 
 - `SCAN`: Set to `on` to enable scanning.
 - `OUTPUT_DIR`: Directory for report output (default: `axe-playwright-report`).
 - `SCREENSHOT`: Set to `on` to capture screenshots of issues.
 - `TAGS`: Comma-separated list of axe-core tags to filter rules.
+- `WITH_RULES`: Comma-separated list of axe-core rule IDs to run.
+- `EXCLUDE_RULES`: Comma-separated list of axe-core rule IDs to exclude from running.
+- `INCLUDE`: Selector to constrain an accessibility scan to only run against one specific part of a page.
+- `EXCLUDE`: Selector to exclude the specified elements and all of their descendants.
+- `MERGE_STRATEGY`: Set to `none` to keep all reports, `exact` to merge only identical reports, `best` to keep the report with the most accessibility issues.
+- `CUSTOM_REG_EXP`: Custom regular expression for improving page normalization algorithm.
+
+You can find example of `.env.a11y` file [here](./.env.a11y.example)
 
 #### Recommendation for custom RegExp
 By default, the library uses a normalization algorithm to avoid duplicate reports for the same page, for example, UUID, numeric or alphanumeric IDs.  
@@ -130,14 +149,57 @@ This will generate an interactive HTML dashboard in your output directory.
 
 ## Generating Bug Summary Reports
 
-You can generate bug summary reports directly from report page for selected accessibility issues.  
+You can generate bug summary reports directly from the report page for selected accessibility issues.  
 This feature allows you to quickly create bug reports with pre-filled titles and descriptions, saving time on repetitive reporting tasks.  
-Based on the amount of selected issues, it generates either a single bug report for each issue or a grouped report for multiple issues.
+Based on the number of selected issues, it generates either a single bug report for each issue or a grouped report for multiple issues.
 
 #### Single Bug Report Example
 ![Single Bug Report Example](./assets/single_bug_report.png)
 #### Grouped Bug Report Example
 ![Grouped Bug Report Example](./assets/grouped_bug_report.png)
+
+
+## Playwright Custom Reporter
+Using the Playwright custom reporter, you can generate an accessibility report after test run automatically.  
+To enable this feature, add the following code to your `playwright.config.ts` file:
+```typescript
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+    reporter: [
+        ['axe-playwright-report/axeBuildReport',
+            {
+                softAssert: true // if true, the process will not fail if there are accessibility issues. Default: false.
+            }
+        ],
+    ],
+});
+```
+`softAssert` parameter is optional and used for controlling the 'test' command behavior within the following cases:
+- `true`: the process will fail if there are accessibility issues.
+- `false`: the process will not fail if there are accessibility issues.
+- not specified: the test command will be not initiated, a process will not fail if there are accessibility issues.
+
+
+## CI/CD Pipeline Integration
+You can integrate the accessibility checks into your CI/CD pipeline by adding the `test` command to your build process.
+```bash
+npx axe-playwright-report test
+```
+This command will enforce accessibility baselines according provided `VIOLATION_THRESHOLD` and `INCOMPLETE_THRESHOLD` in array format by **Critical** and **Serious** impact separated by comma.  
+For example:
+```
+VIOLATION_THRESHOLD=10,10
+INCOMPLETE_THRESHOLD=25
+```
+means that the process will fail if there are more than 10 critical and 10 serious accessibility violations and more than 25 incomplete issues with critical impact level.  
+Arguments `--allow-failure` will allow the process to continue and report failers as warnings.
+
+## axe-playwright-report CLI
+There are two commands available in the CLI:
+- `build-report`: Generates a dashboard report.
+- `merge-reports`: Merges multiple reports into a single report. This command is integrated into the `build-report` command. As the separate command will be useful when you run tests in parallel using Playwright Sharding.
+- `test`: Check accessibility baselines.
 
 
 ### Example Report

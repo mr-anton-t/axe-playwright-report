@@ -1,20 +1,26 @@
 {
   "name": "axe-playwright-report",
-  "version": "1.1.2",
+  "version": "1.2.4",
   "description": "Playwright + axe-core integration to run accessibility scans and build HTML dashboard reports.",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./axeBuildReport": "./dist/axeBuildReport.js"
+  },
   "types": "dist/index.d.ts",
   "bin": {
-    "build-report": "buildReport.js"
+    "axe-playwright-report": "cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp buildReport.js dist/",
     "prepublishOnly": "npm run build",
+    "build-report": "build-report",
     "test": "echo \"No tests yet\" && exit 0"
   },
   "files": [
     "dist",
     "README.md",
+    "buildReport.js",
     "LICENSE",
     "disabilityAffectedData",
     "styles.css",
@@ -37,8 +43,8 @@
     "@axe-core/playwright": ">=4.10.0"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.10.1",
-    "@playwright/test": "^1.52.0",
+    "@axe-core/playwright": "^4.11.0",
+    "@playwright/test": "^1.56.1",
     "@types/node": "^20.8.0",
     "dotenv": "^16.3.1",
     "typescript": "^5.2.2"
